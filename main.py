@@ -28,4 +28,4 @@ async def on_ready():
 
 client.run(TOKEN)
 
-#checks 2
+#full test, from start to finish
