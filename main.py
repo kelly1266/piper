@@ -12,7 +12,6 @@ client = discord.Client()
 
 @client.event
 async def on_message(message):
-    message.content=message.content.lower()
     # we do not want the bot to reply to itself
     if message.author == client.user:
         return
@@ -42,6 +41,26 @@ async def on_message(message):
                 else:
                     msg='User is not in a channel.'
                     await client.send_message(message.channel, msg)
+            elif message_tokens[1] == 'play':
+                user = message.author
+                voice_channel = user.voice.voice_channel
+                channel = 'None'
+                if voice_channel != None:
+                    channel = voice_channel.name
+                    vc = await client.join_voice_channel(voice_channel)
+                    player = await vc.create_ytdl_player(url=message_tokens[2])
+                    msg = 'User is in channel: ' + channel
+                    await client.send_message(message.channel, msg)
+                    msg = 'Now playing: '+player.title
+                    await client.send_message(message.channel, msg)
+                    player.start()
+                    while not player.is_done():
+                        await asyncio.sleep(1)
+                    player.stop()
+                    await vc.disconnect()
+                else:
+                    msg='User is not in a channel.'
+                    await client.send_message(message.channel, msg)
 
 
 @client.event
@@ -53,7 +72,7 @@ async def on_ready():
 
 
 def tokenize(commands):
-    message_tokens=commands.split('-')
+    message_tokens=commands.split(' ')
     return message_tokens
 
 
