@@ -121,6 +121,7 @@ async def stop(context):
         await vc_disconnect.disconnect()
     STREAM_PLAYER=None
 
+
 @client.command(
     name='volume',
     description='Change the volume that Piper is playing the current song at.',
@@ -133,6 +134,23 @@ async def volume(context, vol):
         STREAM_PLAYER_VOLUME=int(vol)/100
         VOLUME_HAS_CHANGED=True
 
+
+@client.command(
+    name='pause',
+    description='Pauses Piper\'s audio stream.',
+    pass_context=True,
+)
+async def pause(context):
+    global STREAM_PLAYER
+    if STREAM_PLAYER != None:
+        if STREAM_PLAYER.is_playing():
+            STREAM_PLAYER.pause()
+            await client.say('Piper has been paused.')
+        else:
+            STREAM_PLAYER.resume()
+            await client.say('Piper has been resumed.')
+    else:
+        await client.say('Piper does not currently have an audio stream playing.')
 
 
 client.run(TOKEN)
