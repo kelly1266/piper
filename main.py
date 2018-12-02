@@ -4,7 +4,6 @@ from discord.ext.commands import Bot
 import random
 import requests
 
-
 BOT_PREFIX='!piper '
 #Piper token
 TOKEN = 'NTE2NzA5OTY3Mjg2NTAxMzc2.Dt3oSA.k2NK-9nu2-jB_QoTyeoajIBXRRc'
@@ -14,7 +13,9 @@ TOKEN = 'NTE2NzIzMjM0NjY2OTcxMTQ2.Dt30Uw.MqF7ofYtE2GiWTBGSg9hjv_9CIQ'
 
 
 client = Bot(command_prefix=BOT_PREFIX)
-
+STREAM_PLAYER=None
+VOLUME_HAS_CHANGED=False
+STREAM_PLAYER_VOLUME=1
 
 @client.command(
     name='vuvuzela',
@@ -45,16 +46,23 @@ async def vuvuzela(context):
     pass_context=True,
 )
 async def play(context, url):
+    global VOLUME_HAS_CHANGED
+    global STREAM_PLAYER_VOLUME
+    global STREAM_PLAYER
     user=context.message.author
     voice_channel = user.voice.voice_channel
     channel = None
     if voice_channel != None:
         vc = await client.join_voice_channel(voice_channel)
         player = await vc.create_ytdl_player(url=url)
+        STREAM_PLAYER = player
         await client.say('User is in channel: '+ voice_channel.name)
         await client.say('Now playing: '+ player.title)
         player.start()
         while not player.is_done():
+            if VOLUME_HAS_CHANGED:
+                player.volume=STREAM_PLAYER_VOLUME
+                VOLUME_HAS_CHANGED=False
             await asyncio.sleep(1)
         player.stop()
         await vc.disconnect()
@@ -102,6 +110,7 @@ async def on_ready():
     pass_context=True
 )
 async def stop(context):
+    global STREAM_PLAYER
     voice_clients=client.voice_clients
     user_vc=context.message.author.voice.voice_channel
     vc_disconnect=None
@@ -110,6 +119,19 @@ async def stop(context):
             vc_disconnect=vc
     if vc_disconnect != None:
         await vc_disconnect.disconnect()
+    STREAM_PLAYER=None
+
+@client.command(
+    name='volume',
+    description='Change the volume that Piper is playing the current song at.',
+    pass_context=True,
+)
+async def volume(context, vol):
+    if STREAM_PLAYER != None:
+        global STREAM_PLAYER_VOLUME
+        global VOLUME_HAS_CHANGED
+        STREAM_PLAYER_VOLUME=int(vol)/100
+        VOLUME_HAS_CHANGED=True
 
 
 
