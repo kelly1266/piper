@@ -10,7 +10,7 @@ BOT_PREFIX='!piper '
 TOKEN = 'NTE2NzA5OTY3Mjg2NTAxMzc2.Dt3oSA.k2NK-9nu2-jB_QoTyeoajIBXRRc'
 
 #Piper test token
-#TOKEN = 'NTE2NzIzMjM0NjY2OTcxMTQ2.Dt30Uw.MqF7ofYtE2GiWTBGSg9hjv_9CIQ'
+TOKEN = 'NTE2NzIzMjM0NjY2OTcxMTQ2.Dt30Uw.MqF7ofYtE2GiWTBGSg9hjv_9CIQ'
 
 
 client = Bot(command_prefix=BOT_PREFIX)
@@ -94,5 +94,23 @@ async def on_ready():
     print(client.user.name)
     print(client.user.id)
     print('------')
+
+
+@client.command(
+    name='stop',
+    description='Immediately stops whatever audio piper is playing and disconnects piper from the channel',
+    pass_context=True
+)
+async def stop(context):
+    voice_clients=client.voice_clients
+    user_vc=context.message.author.voice.voice_channel
+    vc_disconnect=None
+    for vc in voice_clients:
+        if vc.channel == user_vc:
+            vc_disconnect=vc
+    if vc_disconnect != None:
+        await vc_disconnect.disconnect()
+
+
 
 client.run(TOKEN)
