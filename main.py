@@ -151,3 +151,5 @@ async def pause(context):
 
 
 client.run(TOKEN)
+
+#new and improved discord bot
