@@ -5,12 +5,9 @@ import random
 import requests
 
 BOT_PREFIX='!piper '
-#Piper token
-TOKEN = 'NTE2NzA5OTY3Mjg2NTAxMzc2.Dt3oSA.k2NK-9nu2-jB_QoTyeoajIBXRRc'
-
-#Piper test token
-TOKEN = 'NTE2NzIzMjM0NjY2OTcxMTQ2.Dt30Uw.MqF7ofYtE2GiWTBGSg9hjv_9CIQ'
-
+TOKEN=''
+with open('TOKEN_FILE.txt', 'r') as myfile:
+    TOKEN=myfile.read()
 
 client = Bot(command_prefix=BOT_PREFIX)
 STREAM_PLAYER=None
