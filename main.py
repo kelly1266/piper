@@ -3,6 +3,9 @@ import asyncio
 from discord.ext.commands import Bot
 import random
 import requests
+import urllib.request
+import urllib.parse
+import re
 
 BOT_PREFIX='!piper '
 TOKEN=''
@@ -13,6 +16,7 @@ client = Bot(command_prefix=BOT_PREFIX)
 STREAM_PLAYER=None
 VOLUME_HAS_CHANGED=False
 STREAM_PLAYER_VOLUME=1
+LINK_LIST=[]
 
 @client.command(
     name='vuvuzela',
@@ -39,17 +43,26 @@ async def vuvuzela(context):
 
 @client.command(
     name='play',
-    description='Plays the audio from a specified youtube link.',
+    description='Plays the audio from a specified youtube link. If the link is not a valid youtube url it will search youtube and play the first result.',
     pass_context=True,
 )
-async def play(context, url):
+async def play(context, url, *args):
     global VOLUME_HAS_CHANGED
     global STREAM_PLAYER_VOLUME
     global STREAM_PLAYER
+    global LINK_LIST
     user=context.message.author
     voice_channel = user.voice.voice_channel
     channel = None
     if voice_channel != None:
+        if 'https://youtube.com/' not in url:
+            search=url
+            for arg in args:
+                search=search+' '+arg
+                query_string = urllib.parse.urlencode({"search_query": search})
+                html_content = urllib.request.urlopen("http://www.youtube.com/results?" + query_string)
+                search_results = re.findall(r'href=\"\/watch\?v=(.{11})', html_content.read().decode())
+                url="http://www.youtube.com/watch?v=" + search_results[0]
         vc = await client.join_voice_channel(voice_channel)
         player = await vc.create_ytdl_player(url=url)
         STREAM_PLAYER = player
@@ -116,6 +129,7 @@ async def stop(context):
             vc_disconnect=vc
     if vc_disconnect != None:
         await vc_disconnect.disconnect()
+    STREAM_PLAYER.stop()
     STREAM_PLAYER=None
 
 
@@ -151,5 +165,3 @@ async def pause(context):
 
 
 client.run(TOKEN)
-
-#new and improved discord bot
