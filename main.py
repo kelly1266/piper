@@ -6,12 +6,16 @@ import requests
 import urllib.request
 import urllib.parse
 import re
+from yahoo_fin.stock_info import *
+import requests
 
 BOT_PREFIX='!piper '
+#grab the token from a seperate txt file
 TOKEN=''
 with open('TOKEN_FILE.txt', 'r') as myfile:
     TOKEN=myfile.read()
 
+#set global variables
 client = Bot(command_prefix=BOT_PREFIX)
 STREAM_PLAYER=None
 VOLUME_HAS_CHANGED=False
@@ -24,7 +28,9 @@ LINK_LIST=[]
     pass_context=True,
 )
 async def vuvuzela(context):
+    #grab the user who sent the command
     user=context.message.author
+
     voice_channel=user.voice.voice_channel
     channel=None
     if voice_channel!= None:
@@ -63,6 +69,7 @@ async def play(context, url, *args):
                 html_content = urllib.request.urlopen("http://www.youtube.com/results?" + query_string)
                 search_results = re.findall(r'href=\"\/watch\?v=(.{11})', html_content.read().decode())
                 url="http://www.youtube.com/watch?v=" + search_results[0]
+        LINK_LIST.append(url)
         vc = await client.join_voice_channel(voice_channel)
         player = await vc.create_ytdl_player(url=url)
         STREAM_PLAYER = player
@@ -76,6 +83,7 @@ async def play(context, url, *args):
             await asyncio.sleep(1)
         player.stop()
         await vc.disconnect()
+        LINK_LIST.pop(0)
     else:
         await client.say('User is not in a channel.')
 
@@ -162,6 +170,33 @@ async def pause(context):
             await client.say('Piper has been resumed.')
     else:
         await client.say('Piper does not currently have an audio stream playing.')
+
+
+@client.command(
+    name='stock',
+    description='Grabs the current price of a given stock',
+    pass_context=True,
+)
+async def stock(context, acronym):
+    try:
+        price=str(round(get_live_price(acronym), 2))
+        company_name=get_company_name(acronym)
+        await client.say('The current price of '+company_name+ ' stock is $'+price)
+    except:
+        await client.say('Not a valid ticker.')
+
+
+def get_company_name(acronym):
+    """
+    Retrieves the name of a company from yahoo finance given its ticker.
+    :param acronym: company's stock market ticker
+    :return: company name
+    """
+    url = "http://d.yimg.com/autoc.finance.yahoo.com/autoc?query={}&region=1&lang=en".format(acronym)
+    result = requests.get(url).json()
+    for x in result['ResultSet']['Result']:
+        if x['symbol'] == acronym:
+            return x['name']
 
 
 client.run(TOKEN)
