@@ -8,6 +8,9 @@ import urllib.parse
 import re
 from yahoo_fin.stock_info import *
 import requests
+from PyDictionary import PyDictionary
+import enchant
+
 
 BOT_PREFIX='!piper '
 #grab the token from a seperate txt file
@@ -197,6 +200,38 @@ def get_company_name(acronym):
     for x in result['ResultSet']['Result']:
         if x['symbol'] == acronym:
             return x['name']
+
+
+@client.command(
+    name='define',
+    description='Defines a given word.',
+    pass_context=True,
+)
+async def define(context, word):
+    dictionary=PyDictionary()
+    if is_word(word) and not word.isdigit():
+        try:
+            definitions = dictionary.meaning(word)
+            for word_type in definitions:
+                await client.say('**' + word_type + ':**')
+                index = 1
+                for d in definitions[word_type]:
+                    await client.say('   ' + str(index) + '. ' + d)
+                    index += 1
+        except:
+            await client.say('A definition for '+word+' could not be found.')
+    else:
+        await client.say('\"'+str(word)+'\" is not a word.')
+
+
+def is_word(word):
+    """
+    checks whether or not the parameter word is in the dictionary
+    :param word:
+    :return: whether it is in the dictionary or not
+    """
+    dictionary=enchant.Dict('en_us')
+    return dictionary.check(word)
 
 
 client.run(TOKEN)
