@@ -9,7 +9,6 @@ import re
 from yahoo_fin.stock_info import *
 import requests
 from PyDictionary import PyDictionary
-import enchant
 
 
 BOT_PREFIX='!piper '
@@ -230,8 +229,8 @@ def is_word(word):
     :param word:
     :return: whether it is in the dictionary or not
     """
-    dictionary=enchant.Dict('en_us')
-    return dictionary.check(word)
+
+    return True
 
 
 client.run(TOKEN)
