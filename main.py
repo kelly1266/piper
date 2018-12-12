@@ -9,7 +9,8 @@ import re
 from yahoo_fin.stock_info import *
 import requests
 from PyDictionary import PyDictionary
-
+import urllib
+import json
 
 BOT_PREFIX='!piper '
 #grab the token from a seperate txt file
@@ -232,5 +233,47 @@ def is_word(word):
 
     return True
 
+
+@client.command(
+    name='urban-define',
+    description='Scrapes urban dictionary for the definition of a given phrase.',
+    pass_context=True
+)
+async def urban_define(context, *args):
+    phrase=''
+    for word in args:
+        phrase=phrase+str(word)+'+'
+    if len(phrase)>0:
+        phrase= phrase[:-1]
+    url='http://api.urbandictionary.com/v0/define?term='+phrase
+    phrase=phrase.replace('+', ' ')
+    response=urllib.request.urlopen(url)
+    data=json.loads(response.read())
+    if len(data['list'])>0:
+        definition=data['list'][0]['definition']
+        definition=definition.replace('[', '')
+        definition = definition.replace(']', '')
+        await client.say('**'+phrase+'**: '+definition)
+    else:
+        await client.say('No definition found for' +phrase + '.')
+
+
+
+@client.command(
+    name='urban-random',
+    description='Gives a random urban dictionary definition.',
+    pass_context=True
+)
+async def urban_random(context):
+    url='https://api.urbandictionary.com/v0/random'
+    response=urllib.request.urlopen(url)
+    data=json.loads(response.read())
+    if len(data['list'])>0:
+        definition=data['list'][0]['definition']
+        definition=definition.replace('[', '')
+        definition = definition.replace(']', '')
+        await client.say('**'+data['list'][0]['word']+'**: '+definition)
+    else:
+        await client.say('An error has occurred, try again.')
 
 client.run(TOKEN)
