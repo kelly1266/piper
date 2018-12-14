@@ -11,10 +11,10 @@ import requests
 from PyDictionary import PyDictionary
 import urllib
 import json
+import ssl
 
 BOT_PREFIX='!piper '
 #grab the token from a seperate txt file
-TOKEN=''
 with open('TOKEN_FILE.txt', 'r') as myfile:
     TOKEN=myfile.read()
 
@@ -74,7 +74,19 @@ async def play(context, url, *args):
                 url="http://www.youtube.com/watch?v=" + search_results[0]
         LINK_LIST.append(url)
         vc = await client.join_voice_channel(voice_channel)
-        player = await vc.create_ytdl_player(url=url)
+        passed=False
+        index=0
+        player=None
+        while not passed:
+            try:
+                player = await vc.create_ytdl_player(url=url)
+                passed=True
+            except:
+                index+=1
+                query_string = urllib.parse.urlencode({"search_query": search})
+                html_content = urllib.request.urlopen("http://www.youtube.com/results?" + query_string)
+                search_results = re.findall(r'href=\"\/watch\?v=(.{11})', html_content.read().decode())
+                url = "http://www.youtube.com/watch?v=" + search_results[index]
         STREAM_PLAYER = player
         await client.say('User is in channel: '+ voice_channel.name)
         await client.say('Now playing: '+ player.title)
@@ -266,7 +278,8 @@ async def urban_define(context, *args):
 )
 async def urban_random(context):
     url='https://api.urbandictionary.com/v0/random'
-    response=urllib.request.urlopen(url)
+    verify=ssl._create_unverified_context()
+    response=urllib.request.urlopen(url, context=verify)
     data=json.loads(response.read())
     if len(data['list'])>0:
         definition=data['list'][0]['definition']
@@ -275,5 +288,6 @@ async def urban_random(context):
         await client.say('**'+data['list'][0]['word']+'**: '+definition)
     else:
         await client.say('An error has occurred, try again.')
+
 
 client.run(TOKEN)
