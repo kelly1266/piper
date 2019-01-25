@@ -11,39 +11,45 @@ import requests
 from PyDictionary import PyDictionary
 import urllib
 import json
+import ssl
 
-BOT_PREFIX='!piper '
-#grab the token from a seperate txt file
-TOKEN=''
+BOT_PREFIX='!pipes '
+#grab the token from a local txt file
 with open('TOKEN_FILE.txt', 'r') as myfile:
     TOKEN=myfile.read()
 
 #set global variables
+# TODO: Create player class
 client = Bot(command_prefix=BOT_PREFIX)
 STREAM_PLAYER=None
 VOLUME_HAS_CHANGED=False
 STREAM_PLAYER_VOLUME=1
 LINK_LIST=[]
 
+
+# Command methods
 @client.command(
     name='vuvuzela',
     description='Plays an awful vuvuzela in the voice channel',
     pass_context=True,
 )
 async def vuvuzela(context):
-    #grab the user who sent the command
+    # grab the user who sent the command
     user=context.message.author
-
     voice_channel=user.voice.voice_channel
     channel=None
+    # only play music if user is in a voice channel
     if voice_channel!= None:
+        # grab user's voice channel
         channel=voice_channel.name
         await client.say('User is in channel: '+ channel)
+        # create StreamPlayer
         vc= await client.join_voice_channel(voice_channel)
         player = vc.create_ffmpeg_player('vuvuzela.mp3', after=lambda: print('done'))
         player.start()
         while not player.is_done():
             await asyncio.sleep(1)
+        # disconnect after the player has finished
         player.stop()
         await vc.disconnect()
     else:
@@ -60,6 +66,7 @@ async def play(context, url, *args):
     global STREAM_PLAYER_VOLUME
     global STREAM_PLAYER
     global LINK_LIST
+    #grab the voice channel of the user
     user=context.message.author
     voice_channel = user.voice.voice_channel
     channel = None
@@ -74,7 +81,19 @@ async def play(context, url, *args):
                 url="http://www.youtube.com/watch?v=" + search_results[0]
         LINK_LIST.append(url)
         vc = await client.join_voice_channel(voice_channel)
-        player = await vc.create_ytdl_player(url=url)
+        passed=False
+        index=0
+        player=None
+        while not passed:
+            try:
+                player = await vc.create_ytdl_player(url=url)
+                passed=True
+            except:
+                index+=1
+                query_string = urllib.parse.urlencode({"search_query": search})
+                html_content = urllib.request.urlopen("http://www.youtube.com/results?" + query_string)
+                search_results = re.findall(r'href=\"\/watch\?v=(.{11})', html_content.read().decode())
+                url = "http://www.youtube.com/watch?v=" + search_results[index]
         STREAM_PLAYER = player
         await client.say('User is in channel: '+ voice_channel.name)
         await client.say('Now playing: '+ player.title)
@@ -119,6 +138,10 @@ async def roll(context, die):
 
 @client.event
 async def on_ready():
+    """
+    Displays a short message in the console when the bot is initially run
+    :return:
+    """
     print('Logged in as')
     print(client.user.name)
     print(client.user.id)
@@ -189,19 +212,6 @@ async def stock(context, acronym):
         await client.say('Not a valid ticker.')
 
 
-def get_company_name(acronym):
-    """
-    Retrieves the name of a company from yahoo finance given its ticker.
-    :param acronym: company's stock market ticker
-    :return: company name
-    """
-    url = "http://d.yimg.com/autoc.finance.yahoo.com/autoc?query={}&region=1&lang=en".format(acronym)
-    result = requests.get(url).json()
-    for x in result['ResultSet']['Result']:
-        if x['symbol'] == acronym:
-            return x['name']
-
-
 @client.command(
     name='define',
     description='Defines a given word.',
@@ -222,16 +232,6 @@ async def define(context, word):
             await client.say('A definition for '+word+' could not be found.')
     else:
         await client.say('\"'+str(word)+'\" is not a word.')
-
-
-def is_word(word):
-    """
-    checks whether or not the parameter word is in the dictionary
-    :param word:
-    :return: whether it is in the dictionary or not
-    """
-
-    return True
 
 
 @client.command(
@@ -266,7 +266,8 @@ async def urban_define(context, *args):
 )
 async def urban_random(context):
     url='https://api.urbandictionary.com/v0/random'
-    response=urllib.request.urlopen(url)
+    verify=ssl._create_unverified_context()
+    response=urllib.request.urlopen(url, context=verify)
     data=json.loads(response.read())
     if len(data['list'])>0:
         definition=data['list'][0]['definition']
@@ -275,5 +276,45 @@ async def urban_random(context):
         await client.say('**'+data['list'][0]['word']+'**: '+definition)
     else:
         await client.say('An error has occurred, try again.')
+
+
+
+@client.command(
+    name='joke',
+    description='',
+    pass_context=True,
+)
+async def joke(context):
+    return
+
+
+# Helper Methods
+
+def is_word(word):
+    """
+    checks whether or not the parameter word is in the dictionary
+    :param word:
+    :return: whether it is in the dictionary or not
+    """
+
+    return True
+
+
+def get_company_name(acronym):
+    """
+    Retrieves the name of a company from yahoo finance given its ticker.
+    :param acronym: company's stock market ticker
+    :return: company name
+    """
+    url = "http://d.yimg.com/autoc.finance.yahoo.com/autoc?query={}&region=1&lang=en".format(acronym)
+    result = requests.get(url).json()
+    for x in result['ResultSet']['Result']:
+        if x['symbol'] == acronym:
+            return x['name']
+
+
+def scrape_jokes(subreddit):
+    return
+
 
 client.run(TOKEN)
