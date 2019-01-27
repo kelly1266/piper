@@ -12,6 +12,8 @@ from PyDictionary import PyDictionary
 import urllib
 import json
 import ssl
+from gtts import gTTS
+
 
 BOT_PREFIX='!pipes '
 #grab the token from a local txt file
@@ -95,8 +97,8 @@ async def play(context, url, *args):
                 search_results = re.findall(r'href=\"\/watch\?v=(.{11})', html_content.read().decode())
                 url = "http://www.youtube.com/watch?v=" + search_results[index]
         STREAM_PLAYER = player
-        await client.say('User is in channel: '+ voice_channel.name)
-        await client.say('Now playing: '+ player.title)
+        phrase='now playing '+player.title
+        await dictate(context, phrase, vc)
         player.start()
         while not player.is_done():
             if VOLUME_HAS_CHANGED:
@@ -278,6 +280,41 @@ async def urban_random(context):
         await client.say('An error has occurred, try again.')
 
 
+@client.command(
+    name='parrot',
+    description='Converts arguments into speech and then plays that audio file in the user\'s voice channel.',
+    pass_context=True,
+)
+async def parrot(context, *args):
+    phrase = ''
+    for word in args:
+        phrase = phrase + str(word) + '+'
+    if len(phrase) > 0:
+        phrase = phrase[:-1]
+    phrase = phrase.replace('+', ' ')
+    language = 'en'
+    phrase_mp3=gTTS(text=phrase, lang=language, slow=False)
+    phrase_mp3.save("piper_dialogue.mp3")
+    # grab the user who sent the command
+    user = context.message.author
+    voice_channel = user.voice.voice_channel
+    channel = None
+    # only play music if user is in a voice channel
+    if voice_channel != None:
+        # grab user's voice channel
+        channel = voice_channel.name
+        # create StreamPlayer
+        vc = await client.join_voice_channel(voice_channel)
+        player = vc.create_ffmpeg_player('piper_dialogue.mp3', after=lambda: print('done'))
+        player.start()
+        while not player.is_done():
+            await asyncio.sleep(1)
+        # disconnect after the player has finished
+        player.stop()
+        await vc.disconnect()
+    else:
+        await client.say('User is not in a channel.')
+
 
 @client.command(
     name='joke',
@@ -314,6 +351,30 @@ def get_company_name(acronym):
 
 
 def scrape_jokes(subreddit):
+    return
+
+
+async def dictate(context, phrase, vc):
+    language = 'en'
+    phrase_mp3 = gTTS(text=phrase, lang=language, slow=False)
+    phrase_mp3.save("piper_dialogue.mp3")
+    # grab the user who sent the command
+    user = context.message.author
+    voice_channel = user.voice.voice_channel
+    channel = None
+    # only play music if user is in a voice channel
+    if voice_channel != None:
+        # grab user's voice channel
+        channel = voice_channel.name
+        # create StreamPlayer
+        player = vc.create_ffmpeg_player('piper_dialogue.mp3', after=lambda: print('done'))
+        player.start()
+        while not player.is_done():
+            await asyncio.sleep(1)
+        # disconnect after the player has finished
+        player.stop()
+    else:
+        await client.say('User is not in a channel.')
     return
 
 
