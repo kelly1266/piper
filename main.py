@@ -97,8 +97,8 @@ async def play(context, url, *args):
                 search_results = re.findall(r'href=\"\/watch\?v=(.{11})', html_content.read().decode())
                 url = "http://www.youtube.com/watch?v=" + search_results[index]
         STREAM_PLAYER = player
-        phrase='now playing '+player.title
-        await dictate(context, phrase, vc)
+        msg='Now playing: '+player.title
+        await client.say(msg)
         player.start()
         while not player.is_done():
             if VOLUME_HAS_CHANGED:
