@@ -325,6 +325,7 @@ async def joke(context):
     return None
 
 
+
 #On message methods
 @client.event
 async def on_message(message):
