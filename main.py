@@ -325,7 +325,20 @@ async def joke(context):
     return
 
 
+#On message methods
+@client.event
+async def on_message(message):
+    if spellkey(message.content) and message.channel.name != 'spellbreak-lobby-codes':
+        spellbreak_channel=client.get_channel('546689788682436620')
+        await client.send_message(spellbreak_channel, message.content)
+        await client.delete_message(message)
+
+
 # Helper Methods
+
+def spellkey(code):
+    return re.match(r'[A-Z0-9][A-Z0-9][A-Z0-9]-[A-Z0-9][A-Z0-9][A-Z0-9]-[A-Z0-9][A-Z0-9][A-Z0-9]', code)
+
 
 def is_word(word):
     """
