@@ -322,7 +322,7 @@ async def parrot(context, *args):
     pass_context=True,
 )
 async def joke(context):
-    return
+    return None
 
 
 #On message methods
@@ -348,6 +348,7 @@ def is_word(word):
     :return: whether it is in the dictionary or not
     """
     return True
+
 
 
 
