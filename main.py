@@ -332,6 +332,7 @@ async def on_message(message):
         spellbreak_channel=client.get_channel('546689788682436620')
         await client.send_message(spellbreak_channel, message.content)
         await client.delete_message(message)
+    await client.process_commands(message)
 
 
 # Helper Methods
@@ -346,8 +347,8 @@ def is_word(word):
     :param word:
     :return: whether it is in the dictionary or not
     """
-
     return True
+
 
 
 def get_company_name(acronym):
