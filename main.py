@@ -332,6 +332,7 @@ async def on_message(message):
         spellbreak_channel=client.get_channel('546689788682436620')
         await client.send_message(spellbreak_channel, message.content)
         await client.delete_message(message)
+    await client.process_commands(message)
 
 
 # Helper Methods
