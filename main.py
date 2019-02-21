@@ -347,7 +347,6 @@ def is_word(word):
     :param word:
     :return: whether it is in the dictionary or not
     """
-
     return True
 
 
