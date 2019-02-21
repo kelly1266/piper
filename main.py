@@ -322,7 +322,7 @@ async def parrot(context, *args):
     pass_context=True,
 )
 async def joke(context):
-    return
+    return None
 
 
 #On message methods
