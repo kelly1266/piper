@@ -351,6 +351,7 @@ def is_word(word):
 
 
 
+
 def get_company_name(acronym):
     """
     Retrieves the name of a company from yahoo finance given its ticker.
