@@ -13,9 +13,9 @@ import urllib
 import json
 import ssl
 from gtts import gTTS
+from helper_methods import is_int, is_word, spellkey, get_company_name, scrape_jokes, dictate
 
-
-BOT_PREFIX='!pipes '
+BOT_PREFIX='!harper '
 #grab the token from a local txt file
 with open('TOKEN_FILE.txt', 'r') as myfile:
     TOKEN=myfile.read()
@@ -68,6 +68,14 @@ async def play(context, url, *args):
     global STREAM_PLAYER_VOLUME
     global STREAM_PLAYER
     global LINK_LIST
+    #TODO: add possible integer time limit on videos
+    #check for time limit
+    has_time_limit=False
+    time_limit=None
+    if len(args)>1 and is_int(args[-1]):
+        time_limit=int(args[-1])
+        last_index=len(args)-1
+        args=args[0:last_index]
     #grab the voice channel of the user
     user=context.message.author
     voice_channel = user.voice.voice_channel
@@ -100,11 +108,15 @@ async def play(context, url, *args):
         msg='Now playing: '+player.title
         await client.say(msg)
         player.start()
-        while not player.is_done():
+        i=0
+        while not player.is_done() and not has_time_limit:
+            if time_limit is not None and i>=time_limit:
+                has_time_limit=True
             if VOLUME_HAS_CHANGED:
                 player.volume=STREAM_PLAYER_VOLUME
                 VOLUME_HAS_CHANGED=False
             await asyncio.sleep(1)
+            i+=1
         player.stop()
         await vc.disconnect()
         LINK_LIST.pop(0)
@@ -358,62 +370,7 @@ async def on_message(message):
     await client.process_commands(message)
 
 
-# Helper Methods
 
-def spellkey(code):
-    return re.match(r'[A-Z0-9][A-Z0-9][A-Z0-9]-[A-Z0-9][A-Z0-9][A-Z0-9]-[A-Z0-9][A-Z0-9][A-Z0-9]', code)
-
-
-def is_word(word):
-    """
-    checks whether or not the parameter word is in the dictionary
-    :param word:
-    :return: whether it is in the dictionary or not
-    """
-    return True
-
-
-
-
-def get_company_name(acronym):
-    """
-    Retrieves the name of a company from yahoo finance given its ticker.
-    :param acronym: company's stock market ticker
-    :return: company name
-    """
-    url = "http://d.yimg.com/autoc.finance.yahoo.com/autoc?query={}&region=1&lang=en".format(acronym)
-    result = requests.get(url).json()
-    for x in result['ResultSet']['Result']:
-        if x['symbol'] == acronym:
-            return x['name']
-
-
-def scrape_jokes(subreddit):
-    return
-
-
-async def dictate(context, phrase, vc):
-    language = 'en'
-    phrase_mp3 = gTTS(text=phrase, lang=language, slow=False)
-    phrase_mp3.save("piper_dialogue.mp3")
-    # grab the user who sent the command
-    user = context.message.author
-    voice_channel = user.voice.voice_channel
-    channel = None
-    # only play music if user is in a voice channel
-    if voice_channel != None:
-        # grab user's voice channel
-        channel = voice_channel.name
-        # create StreamPlayer
-        player = vc.create_ffmpeg_player('piper_dialogue.mp3', after=lambda: print('done'))
-        player.start()
-        while not player.is_done():
-            await asyncio.sleep(1)
-        # disconnect after the player has finished
-        player.stop()
-    else:
-        await client.say('User is not in a channel.')
-    return
 
 
 client.run(TOKEN)
