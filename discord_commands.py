@@ -14,6 +14,8 @@ import json
 import ssl
 from gtts import gTTS
 from helper_methods import is_int, is_word, spellkey, get_company_name, scrape_jokes, dictate
+from pathlib import Path
+
 
 BOT_PREFIX='!harper '
 #grab the token from a local txt file
@@ -177,7 +179,8 @@ async def stop(context):
             vc_disconnect=vc
     if vc_disconnect != None:
         await vc_disconnect.disconnect()
-    STREAM_PLAYER.stop()
+    if STREAM_PLAYER != None:
+        STREAM_PLAYER.stop()
     STREAM_PLAYER=None
 
 
@@ -370,7 +373,33 @@ async def on_message(message):
     await client.process_commands(message)
 
 
-
-
+@client.event
+async def on_voice_state_update(before, after):
+    #find the server that the user is in for the conditional
+    if before.voice_channel == None:
+        server=after.voice_channel.server
+    else:
+        server=before.voice_channel.server
+    #only if the user whos voice state updated is not a bot and the bot is not already connected to the server
+    if not after.bot and not client.is_voice_connected(server):
+        before_channel = before.voice_channel
+        after_channel = after.voice_channel
+        if before_channel != after_channel and after_channel != None and before_channel == None:
+            #check if a soundbyte for the user exists
+            path='custom_soundbytes/'+after.name+'.mp3'
+            file_check=Path(path)
+            if file_check.exists():
+                print(file_check.exists())
+                channel = client.get_channel(after_channel.id)
+                user_sound_byte = 'custom_soundbytes/' + after.name + '.mp3'
+                # create StreamPlayer
+                vc = await client.join_voice_channel(channel)
+                player = vc.create_ffmpeg_player(user_sound_byte, after=lambda: print('done'))
+                player.start()
+                while not player.is_done():
+                    await asyncio.sleep(1)
+                # disconnect after the player has finished
+                player.stop()
+                await vc.disconnect()
 
 client.run(TOKEN)
