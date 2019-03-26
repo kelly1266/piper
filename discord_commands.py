@@ -389,7 +389,6 @@ async def on_voice_state_update(before, after):
             path='custom_soundbytes/'+after.name+'.mp3'
             file_check=Path(path)
             if file_check.exists():
-                print(file_check.exists())
                 channel = client.get_channel(after_channel.id)
                 user_sound_byte = 'custom_soundbytes/' + after.name + '.mp3'
                 # create StreamPlayer
