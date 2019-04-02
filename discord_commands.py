@@ -15,6 +15,8 @@ import ssl
 from gtts import gTTS
 from helper_methods import is_int, is_word, spellkey, get_company_name, scrape_jokes, dictate
 from pathlib import Path
+import aiohttp
+import logging
 
 
 BOT_PREFIX='!harper '
@@ -340,7 +342,17 @@ async def joke(context):
     return None
 
 
-#On message methods
+@client.command(
+    name='update-mp3',
+    description='Updates a user\'s intro soundbyte',
+    pass_context=True,
+)
+async def update_mp3(context):
+
+    return
+
+
+#On event methods
 @client.event
 async def on_message(message):
     if spellkey(message.content) and message.channel.name != 'spellbreak-lobby-codes':
@@ -400,5 +412,13 @@ async def on_voice_state_update(before, after):
                 # disconnect after the player has finished
                 player.stop()
                 await vc.disconnect()
+
+
+#code for logging errors and debug errors to the file discord.log
+logger = logging.getLogger('discord')
+logger.setLevel(logging.DEBUG)
+handler = logging.FileHandler(filename='discord.log', encoding='utf-8', mode='w')
+handler.setFormatter(logging.Formatter('%(asctime)s:%(levelname)s:%(name)s: %(message)s'))
+logger.addHandler(handler)
 
 client.run(TOKEN)
