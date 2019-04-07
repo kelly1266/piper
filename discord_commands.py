@@ -355,7 +355,7 @@ async def update_mp3(context):
 #On event methods
 @client.event
 async def on_message(message):
-    if spellkey(message.content) and message.channel.name != 'spellbreak-lobby-codes':
+    if spellkey(message.content) and message.channel.name != 'spellbreak-lobby-codes' and message.channel.name != 'hidden':
         spellbreak_channel=client.get_channel('546689788682436620')
         await client.send_message(spellbreak_channel, message.content)
         await client.delete_message(message)
