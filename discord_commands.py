@@ -17,6 +17,8 @@ from helper_methods import is_int, is_word, spellkey, get_company_name, scrape_j
 from pathlib import Path
 import aiohttp
 import logging
+from os import listdir
+from os.path import isfile, join
 
 
 BOT_PREFIX='!harper '
@@ -35,23 +37,41 @@ LINK_LIST=[]
 
 # Command methods
 @client.command(
-    name='vuvuzela',
-    description='Plays an awful vuvuzela in the voice channel',
+    name='soundboard',
+    description='plays a ',
     pass_context=True,
 )
-async def vuvuzela(context):
+async def soundboard(context, *args):
+    #get the full mp3 file name
+    mp3_file_name='soundboard/'
+    for arg in args:
+        mp3_file_name+=arg+' '
+    if mp3_file_name.endswith(' '):
+        mp3_file_name=mp3_file_name[:-1]
+    mp3_file_name+='.mp3'
+    mp3_file_name=mp3_file_name.lower()
+    print(mp3_file_name)
     # grab the user who sent the command
     user=context.message.author
     voice_channel=user.voice.voice_channel
     channel=None
+
+    #check if a file with the given name exists
+    onlyfiles = [f for f in listdir('soundboard/') if isfile(join('soundboard/', f))]
+    file_exists=False
+    for file in onlyfiles:
+        test_file_name='soundboard/'+file
+        if mp3_file_name == test_file_name:
+            file_exists=True
+
     # only play music if user is in a voice channel
-    if voice_channel!= None:
+    if voice_channel!= None and file_exists:
         # grab user's voice channel
         channel=voice_channel.name
         await client.say('User is in channel: '+ channel)
         # create StreamPlayer
         vc= await client.join_voice_channel(voice_channel)
-        player = vc.create_ffmpeg_player('vuvuzela.mp3', after=lambda: print('done'))
+        player = vc.create_ffmpeg_player(mp3_file_name, after=lambda: print('done'))
         player.start()
         while not player.is_done():
             await asyncio.sleep(1)
@@ -59,7 +79,21 @@ async def vuvuzela(context):
         player.stop()
         await vc.disconnect()
     else:
-        await client.say('User is not in a channel.')
+        await client.say('User is not in a channel or file doesnt exist.')
+
+
+@client.command(
+    name='list_soundboard',
+    description='Lists all of the possible soundboard options',
+    pass_context=True,
+)
+async def list_soundboard(context):
+    onlyfiles = [f for f in listdir('soundboard/') if isfile(join('soundboard/', f))]
+    for file in onlyfiles:
+        file_name=file[:-4]
+        await client.say(file_name)
+    return
+
 
 
 @client.command(
