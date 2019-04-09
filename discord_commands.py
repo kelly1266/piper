@@ -96,7 +96,7 @@ async def list_soundboard(context):
 
 @client.command(
     name='upload_soundboard',
-    description='Uploads a new mp3 file to the soundboard.',
+    description='Uploads a new mp3 file to the soundboard. Works by first selecting a file and then adding \"!piper upload_soundboard <title>\"',
     pass_context=True,
 )
 async def upload_soundboard(context, *args):
