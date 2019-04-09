@@ -38,7 +38,7 @@ LINK_LIST=[]
 # Command methods
 @client.command(
     name='soundboard',
-    description='plays a ',
+    description='plays a sound from the list of previously saved mp3s',
     pass_context=True,
 )
 async def soundboard(context, *args):
@@ -50,7 +50,6 @@ async def soundboard(context, *args):
         mp3_file_name=mp3_file_name[:-1]
     mp3_file_name+='.mp3'
     mp3_file_name=mp3_file_name.lower()
-    print(mp3_file_name)
     # grab the user who sent the command
     user=context.message.author
     voice_channel=user.voice.voice_channel
@@ -92,6 +91,31 @@ async def list_soundboard(context):
     for file in onlyfiles:
         file_name=file[:-4]
         await client.say(file_name)
+    return
+
+
+@client.command(
+    name='upload_soundboard',
+    description='Uploads a new mp3 file to the soundboard.',
+    pass_context=True,
+)
+async def upload_soundboard(context, *args):
+
+    if len(context.message.attachments)>0:
+        mp3_file_name = 'soundboard/'
+        for arg in args:
+            mp3_file_name += arg + ' '
+        if mp3_file_name.endswith(' '):
+            mp3_file_name = mp3_file_name[:-1]
+        mp3_file_name += '.mp3'
+        mp3_file_name = mp3_file_name.lower()
+
+        url=context.message.attachments[0]['url']
+        req = urllib.request.Request(url, headers={'User-Agent': "Magic Browser"})
+        with urllib.request.urlopen(req) as response, open(mp3_file_name, 'wb') as out_file:
+            data=response.read()
+            out_file.write(data)
+        client.say('File has been added to the soundboard.')
     return
 
 
