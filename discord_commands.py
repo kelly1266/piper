@@ -115,9 +115,21 @@ async def upload_soundboard(context, *args):
         with urllib.request.urlopen(req) as response, open(mp3_file_name, 'wb') as out_file:
             data=response.read()
             out_file.write(data)
-        client.say('File has been added to the soundboard.')
     return
 
+
+@client.command(
+    name='update_intro',
+    description='Updates or creates a user\'s intro soundbyte.',
+    pass_context=True,
+)
+async def update_intro(context):
+    intro_soundbyte='custom_soundbytes/'+context.message.author.name+'.mp3'
+    url = context.message.attachments[0]['url']
+    req = urllib.request.Request(url, headers={'User-Agent': "Magic Browser"})
+    with urllib.request.urlopen(req) as response, open(intro_soundbyte, 'wb') as out_file:
+        data = response.read()
+        out_file.write(data)
 
 
 @client.command(
