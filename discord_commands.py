@@ -21,6 +21,7 @@ from os import listdir
 from os.path import isfile, join
 
 
+
 BOT_PREFIX='!harper '
 #grab the token from a local txt file
 with open('TOKEN_FILE.txt', 'r') as myfile:
@@ -67,7 +68,6 @@ async def soundboard(context, *args):
     if voice_channel!= None and file_exists:
         # grab user's voice channel
         channel=voice_channel.name
-        await client.say('User is in channel: '+ channel)
         # create StreamPlayer
         vc= await client.join_voice_channel(voice_channel)
         player = vc.create_ffmpeg_player(mp3_file_name, after=lambda: print('done'))
@@ -125,9 +125,13 @@ async def upload_soundboard(context, *args):
 )
 async def update_intro(context):
     intro_soundbyte='custom_soundbytes/'+context.message.author.name+'.mp3'
+    soundboard_file='soundboard/'+context.message.author.name+'.mp3'
     url = context.message.attachments[0]['url']
     req = urllib.request.Request(url, headers={'User-Agent': "Magic Browser"})
     with urllib.request.urlopen(req) as response, open(intro_soundbyte, 'wb') as out_file:
+        data = response.read()
+        out_file.write(data)
+    with urllib.request.urlopen(req) as response, open(soundboard_file, 'wb') as out_file:
         data = response.read()
         out_file.write(data)
 
@@ -410,16 +414,6 @@ async def parrot(context, *args):
 )
 async def joke(context):
     return None
-
-
-@client.command(
-    name='update-mp3',
-    description='Updates a user\'s intro soundbyte',
-    pass_context=True,
-)
-async def update_mp3(context):
-
-    return
 
 
 #On event methods
