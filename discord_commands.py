@@ -162,7 +162,8 @@ async def play(context, url, *args):
         player=None
         while not passed:
             try:
-                player = await vc.create_ytdl_player(url=url)
+                beforeArgs = "-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5"
+                player = await vc.create_ytdl_player(url=url, before_options=beforeArgs)
                 passed=True
             except:
                 index+=1
