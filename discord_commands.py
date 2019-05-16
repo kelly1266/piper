@@ -31,7 +31,6 @@ client = Bot(command_prefix=BOT_PREFIX)
 STREAM_PLAYER=None
 VOLUME_HAS_CHANGED=False
 STREAM_PLAYER_VOLUME=1
-LINK_LIST=[]
 
 
 # Command methods
@@ -143,15 +142,7 @@ async def play(context, url, *args):
     global VOLUME_HAS_CHANGED
     global STREAM_PLAYER_VOLUME
     global STREAM_PLAYER
-    global LINK_LIST
-    #TODO: add possible integer time limit on videos
-    #check for time limit
-    has_time_limit=False
-    time_limit=None
-    if len(args)>1 and is_int(args[-1]):
-        time_limit=int(args[-1])
-        last_index=len(args)-1
-        args=args[0:last_index]
+
     #grab the voice channel of the user
     user=context.message.author
     voice_channel = user.voice.voice_channel
@@ -165,14 +156,14 @@ async def play(context, url, *args):
                 html_content = urllib.request.urlopen("http://www.youtube.com/results?" + query_string)
                 search_results = re.findall(r'href=\"\/watch\?v=(.{11})', html_content.read().decode())
                 url="http://www.youtube.com/watch?v=" + search_results[0]
-        LINK_LIST.append(url)
         vc = await client.join_voice_channel(voice_channel)
         passed=False
         index=0
         player=None
         while not passed:
             try:
-                player = await vc.create_ytdl_player(url=url)
+                beforeArgs = "-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5"
+                player = await vc.create_ytdl_player(url=url, before_options=beforeArgs)
                 passed=True
             except:
                 index+=1
@@ -184,18 +175,13 @@ async def play(context, url, *args):
         msg='Now playing: '+player.title
         await client.say(msg)
         player.start()
-        i=0
-        while not player.is_done() and not has_time_limit:
-            if time_limit is not None and i>=time_limit:
-                has_time_limit=True
+        while not player.is_done():
             if VOLUME_HAS_CHANGED:
                 player.volume=STREAM_PLAYER_VOLUME
                 VOLUME_HAS_CHANGED=False
             await asyncio.sleep(1)
-            i+=1
         player.stop()
         await vc.disconnect()
-        LINK_LIST.pop(0)
     else:
         await client.say('User is not in a channel.')
 
@@ -347,7 +333,6 @@ async def urban_define(context, *args):
         await client.say('**'+phrase+'**: '+definition)
     else:
         await client.say('No definition found for' +phrase + '.')
-
 
 
 @client.command(
