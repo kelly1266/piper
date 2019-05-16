@@ -144,14 +144,7 @@ async def play(context, url, *args):
     global STREAM_PLAYER_VOLUME
     global STREAM_PLAYER
     global LINK_LIST
-    #TODO: add possible integer time limit on videos
-    #check for time limit
-    has_time_limit=False
-    time_limit=None
-    if len(args)>1 and is_int(args[-1]):
-        time_limit=int(args[-1])
-        last_index=len(args)-1
-        args=args[0:last_index]
+
     #grab the voice channel of the user
     user=context.message.author
     voice_channel = user.voice.voice_channel
@@ -184,15 +177,11 @@ async def play(context, url, *args):
         msg='Now playing: '+player.title
         await client.say(msg)
         player.start()
-        i=0
-        while not player.is_done() and not has_time_limit:
-            if time_limit is not None and i>=time_limit:
-                has_time_limit=True
+        while not player.is_done():
             if VOLUME_HAS_CHANGED:
                 player.volume=STREAM_PLAYER_VOLUME
                 VOLUME_HAS_CHANGED=False
             await asyncio.sleep(1)
-            i+=1
         player.stop()
         await vc.disconnect()
         LINK_LIST.pop(0)
