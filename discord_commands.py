@@ -19,13 +19,11 @@ import aiohttp
 import logging
 from os import listdir
 from os.path import isfile, join
-
+import config
 
 
 BOT_PREFIX='!harper '
-#grab the token from a local txt file
-with open('TOKEN_FILE.txt', 'r') as myfile:
-    TOKEN=myfile.read()
+TOKEN=config.TOKEN
 
 #set global variables
 # TODO: Create player class
@@ -405,15 +403,6 @@ async def parrot(context, *args):
         await vc.disconnect()
     else:
         await client.say('User is not in a channel.')
-
-
-@client.command(
-    name='joke',
-    description='',
-    pass_context=True,
-)
-async def joke(context):
-    return None
 
 
 #On event methods
