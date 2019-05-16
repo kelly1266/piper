@@ -31,7 +31,6 @@ client = Bot(command_prefix=BOT_PREFIX)
 STREAM_PLAYER=None
 VOLUME_HAS_CHANGED=False
 STREAM_PLAYER_VOLUME=1
-LINK_LIST=[]
 
 
 # Command methods
@@ -143,7 +142,6 @@ async def play(context, url, *args):
     global VOLUME_HAS_CHANGED
     global STREAM_PLAYER_VOLUME
     global STREAM_PLAYER
-    global LINK_LIST
 
     #grab the voice channel of the user
     user=context.message.author
@@ -158,7 +156,6 @@ async def play(context, url, *args):
                 html_content = urllib.request.urlopen("http://www.youtube.com/results?" + query_string)
                 search_results = re.findall(r'href=\"\/watch\?v=(.{11})', html_content.read().decode())
                 url="http://www.youtube.com/watch?v=" + search_results[0]
-        LINK_LIST.append(url)
         vc = await client.join_voice_channel(voice_channel)
         passed=False
         index=0
@@ -184,7 +181,6 @@ async def play(context, url, *args):
             await asyncio.sleep(1)
         player.stop()
         await vc.disconnect()
-        LINK_LIST.pop(0)
     else:
         await client.say('User is not in a channel.')
 
