@@ -349,7 +349,6 @@ async def urban_define(context, *args):
         await client.say('No definition found for' +phrase + '.')
 
 
-
 @client.command(
     name='urban-random',
     description='Gives a random urban dictionary definition.',
