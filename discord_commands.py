@@ -399,28 +399,16 @@ async def on_message(message):
         await client.send_message(spellbreak_channel, message.content)
         await client.delete_message(message)
     text=message.content.lower()
-    if 'bad bot' in text:
-        reputation_file_read = open('bad_bot.txt', 'r')
-        counter = int(reputation_file_read.read())
-        counter += 1
-        reputation_file_write = open('bad_bot.txt', 'w')
-        reputation_file_write.write(str(counter))
+    if 'bad bot' == text:
+        config.BAD_BOT+=1
         channel = message.channel
-        msg = 'Thank you for the constructive feedback, I have been called a naughty bot ' + str(counter) + ' times.'
+        msg = 'Thank you for the constructive feedback, I have been called a naughty bot ' + str(config.BAD_BOT) + ' times.'
         await client.send_message(channel, msg)
-        reputation_file_read.close()
-        reputation_file_write.close()
-    elif 'good bot' in text:
-        reputation_file_read = open('good_bot.txt', 'r')
-        counter = int(reputation_file_read.read())
-        counter += 1
-        reputation_file_write = open('good_bot.txt', 'w')
-        reputation_file_write.write(str(counter))
+    elif 'good bot' == text:
+        config.GOOD_BOT+=1
         channel = message.channel
-        msg = 'Thank you for your feedback! I have been called a good bot ' + str(counter) + ' times!'
+        msg = 'Thank you for your feedback! I have been called a good bot ' + str(config.GOOD_BOT) + ' times!'
         await client.send_message(channel, msg)
-        reputation_file_read.close()
-        reputation_file_write.close()
     await client.process_commands(message)
 
 
