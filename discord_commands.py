@@ -395,7 +395,7 @@ async def parrot(context, *args):
 @client.event
 async def on_message(message):
     if spellkey(message.content) and message.channel.name != 'spellbreak-lobby-codes' and message.channel.name != 'hidden':
-        spellbreak_channel=client.get_channel('546689788682436620')
+        spellbreak_channel=client.get_channel(config.SPELLBREAK_CHANNEL_ID)
         await client.send_message(spellbreak_channel, message.content)
         await client.delete_message(message)
     text=message.content.lower()
