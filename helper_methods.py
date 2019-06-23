@@ -73,3 +73,7 @@ async def dictate(context, phrase, vc):
         # disconnect after the player has finished
         player.stop()
     return
+
+
+def collect_soundboard_names():
+    return

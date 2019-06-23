@@ -213,18 +213,6 @@ async def roll(context, die):
     await client.say('Total is: '+str(total))
 
 
-@client.event
-async def on_ready():
-    """
-    Displays a short message in the console when the bot is initially run
-    :return:
-    """
-    print('Logged in as')
-    print(client.user.name)
-    print(client.user.id)
-    print('------')
-
-
 @client.command(
     name='stop',
     description='Immediately stops whatever audio piper is playing and disconnects piper from the channel',
@@ -439,6 +427,97 @@ async def on_voice_state_update(before, after):
                 # disconnect after the player has finished
                 player.stop()
                 await vc.disconnect()
+
+
+@client.event
+async def on_reaction_add(reaction, user):
+    soundboard_channel = client.get_channel(config.SOUNDBOARD_CHANNEL_ID)
+    if reaction.message.channel is soundboard_channel:
+        voice_channel=user.voice.voice_channel
+        mp3_file_name='soundboard/'+reaction.message.content+'.mp3'
+        # check if a file with the given name exists
+        onlyfiles = [f for f in listdir('soundboard/') if isfile(join('soundboard/', f))]
+        file_exists = False
+        for file in onlyfiles:
+            test_file_name = 'soundboard/' + file
+            if mp3_file_name == test_file_name:
+                file_exists = True
+        # only play music if user is in a voice channel
+        if voice_channel != None and file_exists:
+            # grab user's voice channel
+            channel = voice_channel.name
+            # create StreamPlayer
+            vc = await client.join_voice_channel(voice_channel)
+            player = vc.create_ffmpeg_player(mp3_file_name, after=lambda: print('done'))
+            player.start()
+            while not player.is_done():
+                await asyncio.sleep(1)
+            # disconnect after the player has finished
+            player.stop()
+            await vc.disconnect()
+    return
+
+
+@client.event
+async def on_reaction_remove(reaction, user):
+    soundboard_channel = client.get_channel(config.SOUNDBOARD_CHANNEL_ID)
+    if reaction.message.channel is soundboard_channel:
+        voice_channel=user.voice.voice_channel
+        mp3_file_name='soundboard/'+reaction.message.content+'.mp3'
+        # check if a file with the given name exists
+        onlyfiles = [f for f in listdir('soundboard/') if isfile(join('soundboard/', f))]
+        file_exists = False
+        for file in onlyfiles:
+            test_file_name = 'soundboard/' + file
+            if mp3_file_name == test_file_name:
+                file_exists = True
+        # only play music if user is in a voice channel
+        if voice_channel != None and file_exists:
+            # grab user's voice channel
+            channel = voice_channel.name
+            # create StreamPlayer
+            vc = await client.join_voice_channel(voice_channel)
+            player = vc.create_ffmpeg_player(mp3_file_name, after=lambda: print('done'))
+            player.start()
+            while not player.is_done():
+                await asyncio.sleep(1)
+            # disconnect after the player has finished
+            player.stop()
+            await vc.disconnect()
+
+    return
+
+
+@client.event
+async def on_ready():
+    """
+    Displays a short message in the console when the bot is initially run
+    :return:
+    """
+    print('Logged in as')
+    print(client.user.name)
+    print(client.user.id)
+    #clear all the messages in the soundboard channel
+    msgs=[]
+    soundboard_channel = client.get_channel(config.SOUNDBOARD_CHANNEL_ID)
+    async for msg in client.logs_from(soundboard_channel):
+        msgs.append(msg)
+    if len(msgs)>1:
+        await client.delete_messages(msgs)
+    elif len(msgs)==1:
+        for message in msgs:
+            await client.delete_message(message)
+    print('text channel <soundboard> has been cleared')
+    onlyfiles = [f for f in listdir('soundboard/') if isfile(join('soundboard/', f))]
+    for file in onlyfiles:
+        file_name = file[:-4]
+        await client.send_message(soundboard_channel, file_name)
+    print('mp3 file names listed in soundboard channel')
+    play_emoji=next(client.get_all_emojis())
+    async for msg in client.logs_from(soundboard_channel):
+        await client.add_reaction(message=msg, emoji=play_emoji)
+    print('reactions added')
+    print('------')
 
 
 #code for logging errors and debug errors to the file discord.log
