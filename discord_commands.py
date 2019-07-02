@@ -2,12 +2,10 @@ import discord
 import asyncio
 from discord.ext.commands import Bot
 import random
-import requests
 import urllib.request
 import urllib.parse
 import re
 from yahoo_fin.stock_info import *
-import requests
 from PyDictionary import PyDictionary
 import urllib
 import json
@@ -15,7 +13,6 @@ import ssl
 from gtts import gTTS
 from helper_methods import is_int, is_word, spellkey, get_company_name, scrape_jokes, dictate
 from pathlib import Path
-import aiohttp
 import logging
 from os import listdir
 from os.path import isfile, join
@@ -31,6 +28,7 @@ client = Bot(command_prefix=BOT_PREFIX)
 STREAM_PLAYER=None
 VOLUME_HAS_CHANGED=False
 STREAM_PLAYER_VOLUME=1
+
 
 
 # Command methods
@@ -142,7 +140,12 @@ async def play(context, url, *args):
     global VOLUME_HAS_CHANGED
     global STREAM_PLAYER_VOLUME
     global STREAM_PLAYER
-
+    emojis = client.get_all_emojis()
+    play_emoji = next(emojis)
+    play_pause_emoji = next(emojis)
+    stop_emoji = next(emojis)
+    down_emoji = next(emojis)
+    up_emoji = next(emojis)
     #grab the voice channel of the user
     user=context.message.author
     voice_channel = user.voice.voice_channel
@@ -173,8 +176,15 @@ async def play(context, url, *args):
                 search_results = re.findall(r'href=\"\/watch\?v=(.{11})', html_content.read().decode())
                 url = "http://www.youtube.com/watch?v=" + search_results[index]
         STREAM_PLAYER = player
-        msg='Now playing: '+player.title
-        await client.say(msg)
+        title = player.title
+        url = player.url
+        embed = discord.Embed(title=title, color=0x992d22)
+        embed.add_field(name='Video URL', value=url, inline=False)
+        msg=await client.send_message(context.message.channel, embed=embed)
+        await client.add_reaction(message=msg, emoji=play_pause_emoji)
+        await client.add_reaction(message=msg, emoji=stop_emoji)
+        await client.add_reaction(message=msg, emoji=down_emoji)
+        await client.add_reaction(message=msg, emoji=up_emoji)
         player.start()
         while not player.is_done():
             if VOLUME_HAS_CHANGED:
@@ -379,6 +389,35 @@ async def parrot(context, *args):
         await client.say('User is not in a channel.')
 
 
+@client.command(
+    name='embed_test',
+    description='',
+    pass_context=True,
+)
+async def embed_test(context):
+    emojis = client.get_all_emojis()
+    play_emoji = next(emojis)
+    play_pause_emoji = next(emojis)
+    stop_emoji = next(emojis)
+    down_emoji = next(emojis)
+    up_emoji = next(emojis)
+    title='Mashd N Kutcher - Do It Now (Official Lyric Video)'
+    url='https://www.youtube.com/watch?v=40KHZ-Jxt6U'
+    embed=discord.Embed(title=title, color=0x992d22)
+    embed.add_field(name='Video URL', value=url, inline=False)
+    msg= await client.send_message(context.message.channel, embed=embed)
+    await client.add_reaction(message=msg, emoji=play_pause_emoji)
+    await client.add_reaction(message=msg, emoji=stop_emoji)
+    await client.add_reaction(message=msg, emoji=down_emoji)
+    await client.add_reaction(message=msg, emoji=up_emoji)
+    print(play_emoji.name)
+    print(play_pause_emoji.name)
+    print(stop_emoji.name)
+    print(down_emoji.name)
+    print(up_emoji.name)
+    return
+
+
 #On event methods
 @client.event
 async def on_message(message):
@@ -431,6 +470,15 @@ async def on_voice_state_update(before, after):
 
 @client.event
 async def on_reaction_add(reaction, user):
+    global STREAM_PLAYER
+    global STREAM_PLAYER_VOLUME
+    global VOLUME_HAS_CHANGED
+    emojis = client.get_all_emojis()
+    play_emoji = next(emojis)
+    play_pause_emoji = next(emojis)
+    stop_emoji = next(emojis)
+    down_emoji = next(emojis)
+    up_emoji = next(emojis)
     soundboard_channel = client.get_channel(config.SOUNDBOARD_CHANNEL_ID)
     if reaction.message.channel is soundboard_channel:
         voice_channel=user.voice.voice_channel
@@ -455,11 +503,46 @@ async def on_reaction_add(reaction, user):
             # disconnect after the player has finished
             player.stop()
             await vc.disconnect()
+    elif not user.bot and reaction.emoji.name == play_pause_emoji.name:
+        if STREAM_PLAYER != None:
+            if STREAM_PLAYER.is_playing():
+                STREAM_PLAYER.pause()
+            else:
+                STREAM_PLAYER.resume()
+    elif not user.bot and reaction.emoji.name == stop_emoji.name:
+        voice_clients = client.voice_clients
+        user_vc = user.voice.voice_channel
+        vc_disconnect = None
+        for vc in voice_clients:
+            if vc.channel == user_vc:
+                vc_disconnect = vc
+        if vc_disconnect != None:
+            await vc_disconnect.disconnect()
+        if STREAM_PLAYER != None:
+            STREAM_PLAYER.stop()
+        STREAM_PLAYER = None
+    elif not user.bot and reaction.emoji.name == down_emoji.name:
+        if STREAM_PLAYER != None:
+            STREAM_PLAYER_VOLUME -=0.1
+            VOLUME_HAS_CHANGED = True
+    elif not user.bot and reaction.emoji.name == up_emoji.name:
+        if STREAM_PLAYER != None:
+            STREAM_PLAYER_VOLUME +=0.1
+            VOLUME_HAS_CHANGED = True
     return
 
 
 @client.event
 async def on_reaction_remove(reaction, user):
+    global STREAM_PLAYER
+    global STREAM_PLAYER_VOLUME
+    global VOLUME_HAS_CHANGED
+    emojis = client.get_all_emojis()
+    play_emoji = next(emojis)
+    play_pause_emoji = next(emojis)
+    stop_emoji = next(emojis)
+    down_emoji = next(emojis)
+    up_emoji = next(emojis)
     soundboard_channel = client.get_channel(config.SOUNDBOARD_CHANNEL_ID)
     if reaction.message.channel is soundboard_channel:
         voice_channel=user.voice.voice_channel
@@ -484,7 +567,32 @@ async def on_reaction_remove(reaction, user):
             # disconnect after the player has finished
             player.stop()
             await vc.disconnect()
-
+    elif not user.bot and reaction.emoji.name == play_pause_emoji.name:
+        if STREAM_PLAYER != None:
+            if STREAM_PLAYER.is_playing():
+                STREAM_PLAYER.pause()
+            else:
+                STREAM_PLAYER.resume()
+    elif not user.bot and reaction.emoji.name == stop_emoji.name:
+        voice_clients = client.voice_clients
+        user_vc = user.voice.voice_channel
+        vc_disconnect = None
+        for vc in voice_clients:
+            if vc.channel == user_vc:
+                vc_disconnect = vc
+        if vc_disconnect != None:
+            await vc_disconnect.disconnect()
+        if STREAM_PLAYER != None:
+            STREAM_PLAYER.stop()
+        STREAM_PLAYER = None
+    elif not user.bot and reaction.emoji.name == down_emoji.name:
+        if STREAM_PLAYER != None:
+            STREAM_PLAYER_VOLUME -=0.1
+            VOLUME_HAS_CHANGED = True
+    elif not user.bot and reaction.emoji.name == up_emoji.name:
+        if STREAM_PLAYER != None:
+            STREAM_PLAYER_VOLUME +=0.1
+            VOLUME_HAS_CHANGED = True
     return
 
 
