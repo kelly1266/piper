@@ -1,3 +1,4 @@
+from __future__ import unicode_literals
 import discord
 import asyncio
 from discord.ext.commands import Bot
@@ -17,6 +18,8 @@ import logging
 from os import listdir
 from os.path import isfile, join
 import config
+import youtube_dl
+from pydub import AudioSegment
 
 
 BOT_PREFIX='!harper '
@@ -415,6 +418,58 @@ async def embed_test(context):
     print(stop_emoji.name)
     print(down_emoji.name)
     print(up_emoji.name)
+    return
+
+@client.command(
+    name='clip',
+    description='',
+    pass_context=True,
+)
+async def clip(context, url, start_time, end_time, *args):
+    name = ''
+    for word in args:
+        name = name + str(word) + '+'
+    if len(name) > 0:
+        name = name[:-1]
+    name = name.replace('+', ' ')
+    parent_dir='C:\\Users\\Ben\\PycharmProjects\\piper\\soundboard\\'
+    filepath = parent_dir + str(name) + '.%(ext)s'
+    ydl_opts = {
+        'outtmpl': filepath,
+        'format': 'bestaudio/best',
+        'postprocessors': [{
+            'key': 'FFmpegExtractAudio',
+            'preferredcodec': 'mp3',
+            'preferredquality': '192',
+        }],
+
+    }
+    with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+        ydl.download([url])
+    audio = AudioSegment.from_mp3(parent_dir+ str(name) + '.mp3')
+    start_time=int(start_time)
+    end_time=int(end_time)
+    start_time *= 1000
+    end_time *= 1000
+    extract = audio[start_time:end_time]
+    extract.export(parent_dir+ str(name) + '.mp3', format='mp3')
+    await client.say('Soundbyte added')
+    msgs=[]
+    soundboard_channel = client.get_channel(config.SOUNDBOARD_CHANNEL_ID)
+    async for msg in client.logs_from(soundboard_channel):
+        msgs.append(msg)
+    if len(msgs)>1:
+        await client.delete_messages(msgs)
+    elif len(msgs)==1:
+        for message in msgs:
+            await client.delete_message(message)
+    onlyfiles = [f for f in listdir('soundboard/') if isfile(join('soundboard/', f))]
+    for file in onlyfiles:
+        file_name = file[:-4]
+        await client.send_message(soundboard_channel, file_name)
+    play_emoji=next(client.get_all_emojis())
+    async for msg in client.logs_from(soundboard_channel):
+        await client.add_reaction(message=msg, emoji=play_emoji)
     return
 
 
