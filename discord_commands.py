@@ -387,34 +387,6 @@ async def parrot(context, *args):
 
 
 @client.command(
-    name='embed_test',
-    description='',
-    pass_context=True,
-)
-async def embed_test(context):
-    emojis = client.get_all_emojis()
-    play_emoji = next(emojis)
-    play_pause_emoji = next(emojis)
-    stop_emoji = next(emojis)
-    down_emoji = next(emojis)
-    up_emoji = next(emojis)
-    title='Mashd N Kutcher - Do It Now (Official Lyric Video)'
-    url='https://www.youtube.com/watch?v=40KHZ-Jxt6U'
-    embed=discord.Embed(title=title, color=0x992d22)
-    embed.add_field(name='Video URL', value=url, inline=False)
-    msg= await client.send_message(context.message.channel, embed=embed)
-    await client.add_reaction(message=msg, emoji=play_pause_emoji)
-    await client.add_reaction(message=msg, emoji=stop_emoji)
-    await client.add_reaction(message=msg, emoji=down_emoji)
-    await client.add_reaction(message=msg, emoji=up_emoji)
-    print(play_emoji.name)
-    print(play_pause_emoji.name)
-    print(stop_emoji.name)
-    print(down_emoji.name)
-    print(up_emoji.name)
-    return
-
-@client.command(
     name='clip',
     description='',
     pass_context=True,
