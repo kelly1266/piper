@@ -1,17 +1,6 @@
-import discord
 import asyncio
-from discord.ext.commands import Bot
-import random
-import requests
-import urllib.request
-import urllib.parse
 import re
-from yahoo_fin.stock_info import *
 import requests
-from PyDictionary import PyDictionary
-import urllib
-import json
-import ssl
 from gtts import gTTS
 
 # Helper Methods

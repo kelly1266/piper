@@ -21,12 +21,12 @@ import config
 import youtube_dl
 from pydub import AudioSegment
 
+#TODO: Add better comments
 
 BOT_PREFIX='!harper '
 TOKEN=config.TOKEN
 
 #set global variables
-# TODO: Create player class
 client = Bot(command_prefix=BOT_PREFIX)
 STREAM_PLAYER=None
 
@@ -95,7 +95,6 @@ async def list_soundboard(context):
     pass_context=True,
 )
 async def upload_soundboard(context, *args):
-
     if len(context.message.attachments)>0:
         mp3_file_name = 'soundboard/'
         for arg in args:
