@@ -33,47 +33,78 @@ STREAM_PLAYER=None
 
 # Command methods
 @client.command(
-    name='soundboard',
-    description='plays a sound from the list of previously saved mp3s',
+    name='clip',
+    description='',
     pass_context=True,
 )
-async def soundboard(context, *args):
-    #get the full mp3 file name
-    mp3_file_name='soundboard/'
-    for arg in args:
-        mp3_file_name+=arg+' '
-    if mp3_file_name.endswith(' '):
-        mp3_file_name=mp3_file_name[:-1]
-    mp3_file_name+='.mp3'
-    mp3_file_name=mp3_file_name.lower()
-    # grab the user who sent the command
-    user=context.message.author
-    voice_channel=user.voice.voice_channel
-    channel=None
+async def clip(context, url, start_time, end_time, *args):
+    name = ''
+    for word in args:
+        name = name + str(word) + '+'
+    if len(name) > 0:
+        name = name[:-1]
+    name = name.replace('+', ' ')
+    parent_dir='C:\\Users\\Ben\\PycharmProjects\\piper\\soundboard\\'
+    filepath = parent_dir + str(name) + '.%(ext)s'
+    ydl_opts = {
+        'outtmpl': filepath,
+        'format': 'bestaudio/best',
+        'postprocessors': [{
+            'key': 'FFmpegExtractAudio',
+            'preferredcodec': 'mp3',
+            'preferredquality': '192',
+        }],
 
-    #check if a file with the given name exists
+    }
+    with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+        ydl.download([url])
+    audio = AudioSegment.from_mp3(parent_dir+ str(name) + '.mp3')
+    start_time=int(start_time)
+    end_time=int(end_time)
+    start_time *= 1000
+    end_time *= 1000
+    extract = audio[start_time:end_time]
+    extract.export(parent_dir+ str(name) + '.mp3', format='mp3')
+    await client.say('Soundbyte added')
+    msgs=[]
+    soundboard_channel = client.get_channel(config.SOUNDBOARD_CHANNEL_ID)
+    async for msg in client.logs_from(soundboard_channel):
+        msgs.append(msg)
+    if len(msgs)>1:
+        await client.delete_messages(msgs)
+    elif len(msgs)==1:
+        for message in msgs:
+            await client.delete_message(message)
     onlyfiles = [f for f in listdir('soundboard/') if isfile(join('soundboard/', f))]
-    file_exists=False
     for file in onlyfiles:
-        test_file_name='soundboard/'+file
-        if mp3_file_name == test_file_name:
-            file_exists=True
+        file_name = file[:-4]
+        await client.send_message(soundboard_channel, file_name)
+    play_emoji=next(client.get_all_emojis())
+    async for msg in client.logs_from(soundboard_channel):
+        await client.add_reaction(message=msg, emoji=play_emoji)
+    return
 
-    # only play music if user is in a voice channel
-    if voice_channel!= None and file_exists:
-        # grab user's voice channel
-        channel=voice_channel.name
-        # create StreamPlayer
-        vc= await client.join_voice_channel(voice_channel)
-        player = vc.create_ffmpeg_player(mp3_file_name, after=lambda: print('done'))
-        player.start()
-        while not player.is_done():
-            await asyncio.sleep(1)
-        # disconnect after the player has finished
-        player.stop()
-        await vc.disconnect()
+
+@client.command(
+    name='define',
+    description='Defines a given word.',
+    pass_context=True,
+)
+async def define(context, word):
+    dictionary=PyDictionary()
+    if is_word(word) and not word.isdigit():
+        try:
+            definitions = dictionary.meaning(word)
+            for word_type in definitions:
+                await client.say('**' + word_type + ':**')
+                index = 1
+                for d in definitions[word_type]:
+                    await client.say('   ' + str(index) + '. ' + d)
+                    index += 1
+        except:
+            await client.say('A definition for '+word+' could not be found.')
     else:
-        await client.say('User is not in a channel or file doesnt exist.')
+        await client.say('\"'+str(word)+'\" is not a word.')
 
 
 @client.command(
@@ -90,44 +121,21 @@ async def list_soundboard(context):
 
 
 @client.command(
-    name='upload_soundboard',
-    description='Uploads a new mp3 file to the soundboard. Works by first selecting a file and then adding \"!piper upload_soundboard <title>\"',
+    name='pause',
+    description='Pauses Piper\'s audio stream.',
     pass_context=True,
 )
-async def upload_soundboard(context, *args):
-    if len(context.message.attachments)>0:
-        mp3_file_name = 'soundboard/'
-        for arg in args:
-            mp3_file_name += arg + ' '
-        if mp3_file_name.endswith(' '):
-            mp3_file_name = mp3_file_name[:-1]
-        mp3_file_name += '.mp3'
-        mp3_file_name = mp3_file_name.lower()
-
-        url=context.message.attachments[0]['url']
-        req = urllib.request.Request(url, headers={'User-Agent': "Magic Browser"})
-        with urllib.request.urlopen(req) as response, open(mp3_file_name, 'wb') as out_file:
-            data=response.read()
-            out_file.write(data)
-    return
-
-
-@client.command(
-    name='update_intro',
-    description='Updates or creates a user\'s intro soundbyte.',
-    pass_context=True,
-)
-async def update_intro(context):
-    intro_soundbyte='custom_soundbytes/'+context.message.author.name+'.mp3'
-    soundboard_file='soundboard/'+context.message.author.name+'.mp3'
-    url = context.message.attachments[0]['url']
-    req = urllib.request.Request(url, headers={'User-Agent': "Magic Browser"})
-    with urllib.request.urlopen(req) as response, open(intro_soundbyte, 'wb') as out_file:
-        data = response.read()
-        out_file.write(data)
-    with urllib.request.urlopen(req) as response, open(soundboard_file, 'wb') as out_file:
-        data = response.read()
-        out_file.write(data)
+async def pause(context):
+    global STREAM_PLAYER
+    if STREAM_PLAYER != None:
+        if STREAM_PLAYER.is_playing():
+            STREAM_PLAYER.pause()
+            await client.say('Piper has been paused.')
+        else:
+            STREAM_PLAYER.resume()
+            await client.say('Piper has been resumed.')
+    else:
+        await client.say('Piper does not currently have an audio stream playing.')
 
 
 @client.command(
@@ -222,6 +230,64 @@ async def roll(context, die):
 
 
 @client.command(
+    name='soundboard',
+    description='plays a sound from the list of previously saved mp3s',
+    pass_context=True,
+)
+async def soundboard(context, *args):
+    #get the full mp3 file name
+    mp3_file_name='soundboard/'
+    for arg in args:
+        mp3_file_name+=arg+' '
+    if mp3_file_name.endswith(' '):
+        mp3_file_name=mp3_file_name[:-1]
+    mp3_file_name+='.mp3'
+    mp3_file_name=mp3_file_name.lower()
+    # grab the user who sent the command
+    user=context.message.author
+    voice_channel=user.voice.voice_channel
+    channel=None
+
+    #check if a file with the given name exists
+    onlyfiles = [f for f in listdir('soundboard/') if isfile(join('soundboard/', f))]
+    file_exists=False
+    for file in onlyfiles:
+        test_file_name='soundboard/'+file
+        if mp3_file_name == test_file_name:
+            file_exists=True
+
+    # only play music if user is in a voice channel
+    if voice_channel!= None and file_exists:
+        # grab user's voice channel
+        channel=voice_channel.name
+        # create StreamPlayer
+        vc= await client.join_voice_channel(voice_channel)
+        player = vc.create_ffmpeg_player(mp3_file_name, after=lambda: print('done'))
+        player.start()
+        while not player.is_done():
+            await asyncio.sleep(1)
+        # disconnect after the player has finished
+        player.stop()
+        await vc.disconnect()
+    else:
+        await client.say('User is not in a channel or file doesnt exist.')
+
+
+@client.command(
+    name='stock',
+    description='Grabs the current price of a given stock',
+    pass_context=True,
+)
+async def stock(context, acronym):
+    try:
+        price=str(round(get_live_price(acronym), 2))
+        company_name=get_company_name(acronym)
+        await client.say('The current price of '+company_name+ ' stock is $'+price)
+    except:
+        await client.say('Not a valid ticker.')
+
+
+@client.command(
     name='stop',
     description='Immediately stops whatever audio piper is playing and disconnects piper from the channel',
     pass_context=True
@@ -242,68 +308,44 @@ async def stop(context):
 
 
 @client.command(
-    name='volume',
-    description='Change the volume that Piper is playing the current song at.',
+    name='update_intro',
+    description='Updates or creates a user\'s intro soundbyte.',
     pass_context=True,
 )
-async def volume(context, vol):
-    global STREAM_PLAYER
-    if STREAM_PLAYER != None:
-        STREAM_PLAYER.volume=int(vol)/100
+async def update_intro(context):
+    intro_soundbyte='custom_soundbytes/'+context.message.author.name+'.mp3'
+    soundboard_file='soundboard/'+context.message.author.name+'.mp3'
+    url = context.message.attachments[0]['url']
+    req = urllib.request.Request(url, headers={'User-Agent': "Magic Browser"})
+    with urllib.request.urlopen(req) as response, open(intro_soundbyte, 'wb') as out_file:
+        data = response.read()
+        out_file.write(data)
+    with urllib.request.urlopen(req) as response, open(soundboard_file, 'wb') as out_file:
+        data = response.read()
+        out_file.write(data)
 
 
 @client.command(
-    name='pause',
-    description='Pauses Piper\'s audio stream.',
+    name='upload_soundboard',
+    description='Uploads a new mp3 file to the soundboard. Works by first selecting a file and then adding \"!piper upload_soundboard <title>\"',
     pass_context=True,
 )
-async def pause(context):
-    global STREAM_PLAYER
-    if STREAM_PLAYER != None:
-        if STREAM_PLAYER.is_playing():
-            STREAM_PLAYER.pause()
-            await client.say('Piper has been paused.')
-        else:
-            STREAM_PLAYER.resume()
-            await client.say('Piper has been resumed.')
-    else:
-        await client.say('Piper does not currently have an audio stream playing.')
+async def upload_soundboard(context, *args):
+    if len(context.message.attachments)>0:
+        mp3_file_name = 'soundboard/'
+        for arg in args:
+            mp3_file_name += arg + ' '
+        if mp3_file_name.endswith(' '):
+            mp3_file_name = mp3_file_name[:-1]
+        mp3_file_name += '.mp3'
+        mp3_file_name = mp3_file_name.lower()
 
-
-@client.command(
-    name='stock',
-    description='Grabs the current price of a given stock',
-    pass_context=True,
-)
-async def stock(context, acronym):
-    try:
-        price=str(round(get_live_price(acronym), 2))
-        company_name=get_company_name(acronym)
-        await client.say('The current price of '+company_name+ ' stock is $'+price)
-    except:
-        await client.say('Not a valid ticker.')
-
-
-@client.command(
-    name='define',
-    description='Defines a given word.',
-    pass_context=True,
-)
-async def define(context, word):
-    dictionary=PyDictionary()
-    if is_word(word) and not word.isdigit():
-        try:
-            definitions = dictionary.meaning(word)
-            for word_type in definitions:
-                await client.say('**' + word_type + ':**')
-                index = 1
-                for d in definitions[word_type]:
-                    await client.say('   ' + str(index) + '. ' + d)
-                    index += 1
-        except:
-            await client.say('A definition for '+word+' could not be found.')
-    else:
-        await client.say('\"'+str(word)+'\" is not a word.')
+        url=context.message.attachments[0]['url']
+        req = urllib.request.Request(url, headers={'User-Agent': "Magic Browser"})
+        with urllib.request.urlopen(req) as response, open(mp3_file_name, 'wb') as out_file:
+            data=response.read()
+            out_file.write(data)
+    return
 
 
 @client.command(
@@ -350,6 +392,17 @@ async def urban_random(context):
 
 
 @client.command(
+    name='volume',
+    description='Change the volume that Piper is playing the current song at.',
+    pass_context=True,
+)
+async def volume(context, vol):
+    global STREAM_PLAYER
+    if STREAM_PLAYER != None:
+        STREAM_PLAYER.volume=int(vol)/100
+
+
+@client.command(
     name='parrot',
     description='Converts arguments into speech and then plays that audio file in the user\'s voice channel.',
     pass_context=True,
@@ -385,57 +438,7 @@ async def parrot(context, *args):
         await client.say('User is not in a channel.')
 
 
-@client.command(
-    name='clip',
-    description='',
-    pass_context=True,
-)
-async def clip(context, url, start_time, end_time, *args):
-    name = ''
-    for word in args:
-        name = name + str(word) + '+'
-    if len(name) > 0:
-        name = name[:-1]
-    name = name.replace('+', ' ')
-    parent_dir='C:\\Users\\Ben\\PycharmProjects\\piper\\soundboard\\'
-    filepath = parent_dir + str(name) + '.%(ext)s'
-    ydl_opts = {
-        'outtmpl': filepath,
-        'format': 'bestaudio/best',
-        'postprocessors': [{
-            'key': 'FFmpegExtractAudio',
-            'preferredcodec': 'mp3',
-            'preferredquality': '192',
-        }],
 
-    }
-    with youtube_dl.YoutubeDL(ydl_opts) as ydl:
-        ydl.download([url])
-    audio = AudioSegment.from_mp3(parent_dir+ str(name) + '.mp3')
-    start_time=int(start_time)
-    end_time=int(end_time)
-    start_time *= 1000
-    end_time *= 1000
-    extract = audio[start_time:end_time]
-    extract.export(parent_dir+ str(name) + '.mp3', format='mp3')
-    await client.say('Soundbyte added')
-    msgs=[]
-    soundboard_channel = client.get_channel(config.SOUNDBOARD_CHANNEL_ID)
-    async for msg in client.logs_from(soundboard_channel):
-        msgs.append(msg)
-    if len(msgs)>1:
-        await client.delete_messages(msgs)
-    elif len(msgs)==1:
-        for message in msgs:
-            await client.delete_message(message)
-    onlyfiles = [f for f in listdir('soundboard/') if isfile(join('soundboard/', f))]
-    for file in onlyfiles:
-        file_name = file[:-4]
-        await client.send_message(soundboard_channel, file_name)
-    play_emoji=next(client.get_all_emojis())
-    async for msg in client.logs_from(soundboard_channel):
-        await client.add_reaction(message=msg, emoji=play_emoji)
-    return
 
 
 #On event methods
