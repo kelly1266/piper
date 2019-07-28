@@ -21,14 +21,14 @@ import config
 import youtube_dl
 from pydub import AudioSegment
 
-#TODO: Add better comments
+# TODO: Add better comments
 
-BOT_PREFIX='!harper '
-TOKEN=config.TOKEN
+BOT_PREFIX = '!harper '
+TOKEN = config.TOKEN
 
-#set global variables
+# set global variables
 client = Bot(command_prefix=BOT_PREFIX)
-STREAM_PLAYER=None
+STREAM_PLAYER = None
 
 
 # Command methods
@@ -44,7 +44,7 @@ async def clip(context, url, start_time, end_time, *args):
     if len(name) > 0:
         name = name[:-1]
     name = name.replace('+', ' ')
-    parent_dir='C:\\Users\\Ben\\PycharmProjects\\piper\\soundboard\\'
+    parent_dir = 'C:\\Users\\Ben\\PycharmProjects\\piper\\soundboard\\'
     filepath = parent_dir + str(name) + '.%(ext)s'
     ydl_opts = {
         'outtmpl': filepath,
@@ -58,28 +58,28 @@ async def clip(context, url, start_time, end_time, *args):
     }
     with youtube_dl.YoutubeDL(ydl_opts) as ydl:
         ydl.download([url])
-    audio = AudioSegment.from_mp3(parent_dir+ str(name) + '.mp3')
-    start_time=int(start_time)
-    end_time=int(end_time)
+    audio = AudioSegment.from_mp3(parent_dir + str(name) + '.mp3')
+    start_time = int(start_time)
+    end_time = int(end_time)
     start_time *= 1000
     end_time *= 1000
     extract = audio[start_time:end_time]
-    extract.export(parent_dir+ str(name) + '.mp3', format='mp3')
+    extract.export(parent_dir + str(name) + '.mp3', format='mp3')
     await client.say('Soundbyte added')
-    msgs=[]
+    msgs = []
     soundboard_channel = client.get_channel(config.SOUNDBOARD_CHANNEL_ID)
     async for msg in client.logs_from(soundboard_channel):
         msgs.append(msg)
-    if len(msgs)>1:
+    if len(msgs) > 1:
         await client.delete_messages(msgs)
-    elif len(msgs)==1:
+    elif len(msgs) == 1:
         for message in msgs:
             await client.delete_message(message)
     onlyfiles = [f for f in listdir('soundboard/') if isfile(join('soundboard/', f))]
     for file in onlyfiles:
         file_name = file[:-4]
         await client.send_message(soundboard_channel, file_name)
-    play_emoji=next(client.get_all_emojis())
+    play_emoji = next(client.get_all_emojis())
     async for msg in client.logs_from(soundboard_channel):
         await client.add_reaction(message=msg, emoji=play_emoji)
     return
@@ -91,7 +91,7 @@ async def clip(context, url, start_time, end_time, *args):
     pass_context=True,
 )
 async def define(context, word):
-    dictionary=PyDictionary()
+    dictionary = PyDictionary()
     if is_word(word) and not word.isdigit():
         try:
             definitions = dictionary.meaning(word)
@@ -115,7 +115,7 @@ async def define(context, word):
 async def list_soundboard(context):
     onlyfiles = [f for f in listdir('soundboard/') if isfile(join('soundboard/', f))]
     for file in onlyfiles:
-        file_name=file[:-4]
+        file_name = file[:-4]
         await client.say(file_name)
     return
 
@@ -209,22 +209,22 @@ async def play_yt(url, voice_channel, text_channel, *args):
     pass_context=True,
 )
 async def roll(context, die):
-    num_die=die.split('d')[0]
-    max_val=die.split('d')[1]
-    results=[]
-    total=0
-    if int(num_die)<=0 or int(max_val)<1:
+    num_die = die.split('d')[0]
+    max_val = die.split('d')[1]
+    results = []
+    total = 0
+    if int(num_die) <= 0 or int(max_val)<1:
         await client.say('Stop trying to fuck with my bot Zach')
         return
     for die in range(1, int(num_die)+1):
-        x=random.randrange(1, int(max_val)+1)
+        x = random.randrange(1, int(max_val)+1)
         results.append(x)
-        total+=x
-    msg=''
+        total += x
+    msg = ''
     for result in results:
-        msg+=str(result)+' + '
+        msg += str(result)+' + '
     if msg.endswith(' + '):
-        msg=msg[:-3]
+        msg = msg[:-3]
     await client.say(msg)
     await client.say('Total is: '+str(total))
 
@@ -236,32 +236,32 @@ async def roll(context, die):
 )
 async def soundboard(context, *args):
     #get the full mp3 file name
-    mp3_file_name='soundboard/'
+    mp3_file_name = 'soundboard/'
     for arg in args:
-        mp3_file_name+=arg+' '
+        mp3_file_name += arg+' '
     if mp3_file_name.endswith(' '):
-        mp3_file_name=mp3_file_name[:-1]
-    mp3_file_name+='.mp3'
-    mp3_file_name=mp3_file_name.lower()
+        mp3_file_name = mp3_file_name[:-1]
+    mp3_file_name += '.mp3'
+    mp3_file_name = mp3_file_name.lower()
     # grab the user who sent the command
-    user=context.message.author
-    voice_channel=user.voice.voice_channel
+    user = context.message.author
+    voice_channel = user.voice.voice_channel
     channel=None
 
     #check if a file with the given name exists
     onlyfiles = [f for f in listdir('soundboard/') if isfile(join('soundboard/', f))]
-    file_exists=False
+    file_exists = False
     for file in onlyfiles:
-        test_file_name='soundboard/'+file
+        test_file_name = 'soundboard/'+file
         if mp3_file_name == test_file_name:
-            file_exists=True
+            file_exists = True
 
     # only play music if user is in a voice channel
-    if voice_channel!= None and file_exists:
+    if voice_channel != None and file_exists:
         # grab user's voice channel
-        channel=voice_channel.name
+        channel = voice_channel.name
         # create StreamPlayer
-        vc= await client.join_voice_channel(voice_channel)
+        vc = await client.join_voice_channel(voice_channel)
         player = vc.create_ffmpeg_player(mp3_file_name, after=lambda: print('done'))
         player.start()
         while not player.is_done():
@@ -280,8 +280,8 @@ async def soundboard(context, *args):
 )
 async def stock(context, acronym):
     try:
-        price=str(round(get_live_price(acronym), 2))
-        company_name=get_company_name(acronym)
+        price = str(round(get_live_price(acronym), 2))
+        company_name = get_company_name(acronym)
         await client.say('The current price of '+company_name+ ' stock is $'+price)
     except:
         await client.say('Not a valid ticker.')
@@ -294,12 +294,12 @@ async def stock(context, acronym):
 )
 async def stop(context):
     global STREAM_PLAYER
-    voice_clients=client.voice_clients
-    user_vc=context.message.author.voice.voice_channel
-    vc_disconnect=None
+    voice_clients = client.voice_clients
+    user_vc = context.message.author.voice.voice_channel
+    vc_disconnect = None
     for vc in voice_clients:
         if vc.channel == user_vc:
-            vc_disconnect=vc
+            vc_disconnect = vc
     if vc_disconnect != None:
         await vc_disconnect.disconnect()
     if STREAM_PLAYER != None:
@@ -313,8 +313,8 @@ async def stop(context):
     pass_context=True,
 )
 async def update_intro(context):
-    intro_soundbyte='custom_soundbytes/'+context.message.author.name+'.mp3'
-    soundboard_file='soundboard/'+context.message.author.name+'.mp3'
+    intro_soundbyte = 'custom_soundbytes/'+context.message.author.name+'.mp3'
+    soundboard_file = 'soundboard/'+context.message.author.name+'.mp3'
     url = context.message.attachments[0]['url']
     req = urllib.request.Request(url, headers={'User-Agent': "Magic Browser"})
     with urllib.request.urlopen(req) as response, open(intro_soundbyte, 'wb') as out_file:
@@ -340,10 +340,10 @@ async def upload_soundboard(context, *args):
         mp3_file_name += '.mp3'
         mp3_file_name = mp3_file_name.lower()
 
-        url=context.message.attachments[0]['url']
+        url = context.message.attachments[0]['url']
         req = urllib.request.Request(url, headers={'User-Agent': "Magic Browser"})
         with urllib.request.urlopen(req) as response, open(mp3_file_name, 'wb') as out_file:
-            data=response.read()
+            data = response.read()
             out_file.write(data)
     return
 
@@ -354,22 +354,22 @@ async def upload_soundboard(context, *args):
     pass_context=True
 )
 async def urban_define(context, *args):
-    phrase=''
+    phrase = ''
     for word in args:
-        phrase=phrase+str(word)+'+'
-    if len(phrase)>0:
-        phrase= phrase[:-1]
-    url='http://api.urbandictionary.com/v0/define?term='+phrase
-    phrase=phrase.replace('+', ' ')
-    response=urllib.request.urlopen(url)
-    data=json.loads(response.read())
-    if len(data['list'])>0:
-        definition=data['list'][0]['definition']
-        definition=definition.replace('[', '')
+        phrase = phrase+str(word)+'+'
+    if len(phrase) > 0:
+        phrase = phrase[:-1]
+    url = 'http://api.urbandictionary.com/v0/define?term='+phrase
+    phrase = phrase.replace('+', ' ')
+    response = urllib.request.urlopen(url)
+    data = json.loads(response.read())
+    if len(data['list']) > 0:
+        definition = data['list'][0]['definition']
+        definition = definition.replace('[', '')
         definition = definition.replace(']', '')
         await client.say('**'+phrase+'**: '+definition)
     else:
-        await client.say('No definition found for' +phrase + '.')
+        await client.say('No definition found for' + phrase + '.')
 
 
 @client.command(
@@ -379,12 +379,12 @@ async def urban_define(context, *args):
 )
 async def urban_random(context):
     url='https://api.urbandictionary.com/v0/random'
-    verify=ssl._create_unverified_context()
-    response=urllib.request.urlopen(url, context=verify)
-    data=json.loads(response.read())
+    verify = ssl._create_unverified_context()
+    response = urllib.request.urlopen(url, context=verify)
+    data = json.loads(response.read())
     if len(data['list'])>0:
-        definition=data['list'][0]['definition']
-        definition=definition.replace('[', '')
+        definition = data['list'][0]['definition']
+        definition = definition.replace('[', '')
         definition = definition.replace(']', '')
         await client.say('**'+data['list'][0]['word']+'**: '+definition)
     else:
@@ -399,7 +399,7 @@ async def urban_random(context):
 async def volume(context, vol):
     global STREAM_PLAYER
     if STREAM_PLAYER != None:
-        STREAM_PLAYER.volume=int(vol)/100
+        STREAM_PLAYER.volume = int(vol)/100
 
 
 @client.command(
@@ -415,7 +415,7 @@ async def parrot(context, *args):
         phrase = phrase[:-1]
     phrase = phrase.replace('+', ' ')
     language = 'en'
-    phrase_mp3=gTTS(text=phrase, lang=language, slow=False)
+    phrase_mp3 = gTTS(text=phrase, lang=language, slow=False)
     phrase_mp3.save("piper_dialogue.mp3")
     # grab the user who sent the command
     user = context.message.author
@@ -445,17 +445,17 @@ async def parrot(context, *args):
 @client.event
 async def on_message(message):
     if spellkey(message.content) and message.channel.name != 'spellbreak-lobby-codes' and message.channel.name != 'hidden':
-        spellbreak_channel=client.get_channel(config.SPELLBREAK_CHANNEL_ID)
+        spellbreak_channel = client.get_channel(config.SPELLBREAK_CHANNEL_ID)
         await client.send_message(spellbreak_channel, message.content)
         await client.delete_message(message)
     text=message.content.lower()
     if 'bad bot' == text:
-        config.BAD_BOT+=1
+        config.BAD_BOT += 1
         channel = message.channel
         msg = 'Thank you for the constructive feedback, I have been called a naughty bot ' + str(config.BAD_BOT) + ' times.'
         await client.send_message(channel, msg)
     elif 'good bot' == text:
-        config.GOOD_BOT+=1
+        config.GOOD_BOT += 1
         channel = message.channel
         msg = 'Thank you for your feedback! I have been called a good bot ' + str(config.GOOD_BOT) + ' times!'
         await client.send_message(channel, msg)
@@ -464,19 +464,19 @@ async def on_message(message):
 
 @client.event
 async def on_voice_state_update(before, after):
-    #find the server that the user is in for the conditional
+    # find the server that the user is in for the conditional
     if before.voice_channel == None:
         server=after.voice_channel.server
     else:
         server=before.voice_channel.server
-    #only if the user whos voice state updated is not a bot and the bot is not already connected to the server
+    # only if the user whos voice state updated is not a bot and the bot is not already connected to the server
     if not after.bot and not client.is_voice_connected(server):
         before_channel = before.voice_channel
         after_channel = after.voice_channel
         if before_channel != after_channel and after_channel != None and before_channel == None:
-            #check if a soundbyte for the user exists
-            path='custom_soundbytes/'+after.name+'.mp3'
-            file_check=Path(path)
+            # check if a soundbyte for the user exists
+            path = 'custom_soundbytes/'+after.name+'.mp3'
+            file_check = Path(path)
             if file_check.exists():
                 channel = client.get_channel(after_channel.id)
                 user_sound_byte = 'custom_soundbytes/' + after.name + '.mp3'
@@ -575,14 +575,14 @@ async def on_ready():
     print('Logged in as')
     print(client.user.name)
     print(client.user.id)
-    #clear all the messages in the soundboard channel
+    # clear all the messages in the soundboard channel
     msgs=[]
     soundboard_channel = client.get_channel(config.SOUNDBOARD_CHANNEL_ID)
     async for msg in client.logs_from(soundboard_channel):
         msgs.append(msg)
-    if len(msgs)>1:
+    if len(msgs) > 1:
         await client.delete_messages(msgs)
-    elif len(msgs)==1:
+    elif len(msgs) == 1:
         for message in msgs:
             await client.delete_message(message)
     print('text channel <soundboard> has been cleared')
@@ -591,14 +591,14 @@ async def on_ready():
         file_name = file[:-4]
         await client.send_message(soundboard_channel, file_name)
     print('mp3 file names listed in soundboard channel')
-    play_emoji=next(client.get_all_emojis())
+    play_emoji = next(client.get_all_emojis())
     async for msg in client.logs_from(soundboard_channel):
         await client.add_reaction(message=msg, emoji=play_emoji)
     print('reactions added')
     print('------')
 
 
-#code for logging errors and debug errors to the file discord.log
+# code for logging errors and debug errors to the file discord.log
 logger = logging.getLogger('discord')
 logger.setLevel(logging.DEBUG)
 handler = logging.FileHandler(filename='discord.log', encoding='utf-8', mode='w')
