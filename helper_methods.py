@@ -75,5 +75,5 @@ async def dictate(context, phrase, vc):
     return
 
 
-def collect_soundboard_names():
+async def play_yt(url, voice_channel, text_channel):
     return

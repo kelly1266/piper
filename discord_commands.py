@@ -29,9 +29,6 @@ TOKEN=config.TOKEN
 # TODO: Create player class
 client = Bot(command_prefix=BOT_PREFIX)
 STREAM_PLAYER=None
-VOLUME_HAS_CHANGED=False
-STREAM_PLAYER_VOLUME=1
-
 
 
 # Command methods
@@ -140,8 +137,6 @@ async def update_intro(context):
     pass_context=True,
 )
 async def play(context, url, *args):
-    global VOLUME_HAS_CHANGED
-    global STREAM_PLAYER_VOLUME
     global STREAM_PLAYER
     emojis = client.get_all_emojis()
     play_emoji = next(emojis)
@@ -190,9 +185,6 @@ async def play(context, url, *args):
         await client.add_reaction(message=msg, emoji=up_emoji)
         player.start()
         while not player.is_done():
-            if VOLUME_HAS_CHANGED:
-                player.volume=STREAM_PLAYER_VOLUME
-                VOLUME_HAS_CHANGED=False
             await asyncio.sleep(1)
         player.stop()
         await vc.disconnect()
@@ -252,11 +244,9 @@ async def stop(context):
     pass_context=True,
 )
 async def volume(context, vol):
+    global STREAM_PLAYER
     if STREAM_PLAYER != None:
-        global STREAM_PLAYER_VOLUME
-        global VOLUME_HAS_CHANGED
-        STREAM_PLAYER_VOLUME=int(vol)/100
-        VOLUME_HAS_CHANGED=True
+        STREAM_PLAYER.volume=int(vol)/100
 
 
 @client.command(
@@ -526,8 +516,6 @@ async def on_voice_state_update(before, after):
 @client.event
 async def on_reaction_add(reaction, user):
     global STREAM_PLAYER
-    global STREAM_PLAYER_VOLUME
-    global VOLUME_HAS_CHANGED
     emojis = client.get_all_emojis()
     play_emoji = next(emojis)
     play_pause_emoji = next(emojis)
@@ -578,20 +566,16 @@ async def on_reaction_add(reaction, user):
         STREAM_PLAYER = None
     elif not user.bot and reaction.emoji.name == down_emoji.name:
         if STREAM_PLAYER != None:
-            STREAM_PLAYER_VOLUME -=0.1
-            VOLUME_HAS_CHANGED = True
+            STREAM_PLAYER.volume -=0.1
     elif not user.bot and reaction.emoji.name == up_emoji.name:
         if STREAM_PLAYER != None:
-            STREAM_PLAYER_VOLUME +=0.1
-            VOLUME_HAS_CHANGED = True
+            STREAM_PLAYER.volume +=0.1
     return
 
 
 @client.event
 async def on_reaction_remove(reaction, user):
     global STREAM_PLAYER
-    global STREAM_PLAYER_VOLUME
-    global VOLUME_HAS_CHANGED
     emojis = client.get_all_emojis()
     play_emoji = next(emojis)
     play_pause_emoji = next(emojis)
@@ -642,12 +626,10 @@ async def on_reaction_remove(reaction, user):
         STREAM_PLAYER = None
     elif not user.bot and reaction.emoji.name == down_emoji.name:
         if STREAM_PLAYER != None:
-            STREAM_PLAYER_VOLUME -=0.1
-            VOLUME_HAS_CHANGED = True
+            STREAM_PLAYER.volume -=0.1
     elif not user.bot and reaction.emoji.name == up_emoji.name:
         if STREAM_PLAYER != None:
-            STREAM_PLAYER_VOLUME +=0.1
-            VOLUME_HAS_CHANGED = True
+            STREAM_PLAYER.volume +=0.1
     return
 
 
@@ -661,25 +643,25 @@ async def on_ready():
     print(client.user.name)
     print(client.user.id)
     #clear all the messages in the soundboard channel
-    msgs=[]
-    soundboard_channel = client.get_channel(config.SOUNDBOARD_CHANNEL_ID)
-    async for msg in client.logs_from(soundboard_channel):
-        msgs.append(msg)
-    if len(msgs)>1:
-        await client.delete_messages(msgs)
-    elif len(msgs)==1:
-        for message in msgs:
-            await client.delete_message(message)
-    print('text channel <soundboard> has been cleared')
-    onlyfiles = [f for f in listdir('soundboard/') if isfile(join('soundboard/', f))]
-    for file in onlyfiles:
-        file_name = file[:-4]
-        await client.send_message(soundboard_channel, file_name)
-    print('mp3 file names listed in soundboard channel')
-    play_emoji=next(client.get_all_emojis())
-    async for msg in client.logs_from(soundboard_channel):
-        await client.add_reaction(message=msg, emoji=play_emoji)
-    print('reactions added')
+    # msgs=[]
+    # soundboard_channel = client.get_channel(config.SOUNDBOARD_CHANNEL_ID)
+    # async for msg in client.logs_from(soundboard_channel):
+    #     msgs.append(msg)
+    # if len(msgs)>1:
+    #     await client.delete_messages(msgs)
+    # elif len(msgs)==1:
+    #     for message in msgs:
+    #         await client.delete_message(message)
+    # print('text channel <soundboard> has been cleared')
+    # onlyfiles = [f for f in listdir('soundboard/') if isfile(join('soundboard/', f))]
+    # for file in onlyfiles:
+    #     file_name = file[:-4]
+    #     await client.send_message(soundboard_channel, file_name)
+    # print('mp3 file names listed in soundboard channel')
+    # play_emoji=next(client.get_all_emojis())
+    # async for msg in client.logs_from(soundboard_channel):
+    #     await client.add_reaction(message=msg, emoji=play_emoji)
+    # print('reactions added')
     print('------')
 
 
