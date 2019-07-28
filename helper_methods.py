@@ -75,5 +75,4 @@ async def dictate(context, phrase, vc):
     return
 
 
-def collect_soundboard_names():
-    return
+
