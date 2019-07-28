@@ -137,6 +137,10 @@ async def update_intro(context):
     pass_context=True,
 )
 async def play(context, url, *args):
+    await play_yt(url, context.message.author.voice.voice_channel, context.message.channel, *args)
+
+
+async def play_yt(url, voice_channel, text_channel, *args):
     global STREAM_PLAYER
     emojis = client.get_all_emojis()
     play_emoji = next(emojis)
@@ -144,31 +148,29 @@ async def play(context, url, *args):
     stop_emoji = next(emojis)
     down_emoji = next(emojis)
     up_emoji = next(emojis)
-    #grab the voice channel of the user
-    user=context.message.author
-    voice_channel = user.voice.voice_channel
+    # grab the voice channel of the user
     channel = None
     if voice_channel != None:
         if 'https://youtube.com/' not in url:
-            search=url
+            search = url
             for arg in args:
-                search=search+' '+arg
+                search = search + ' ' + arg
                 query_string = urllib.parse.urlencode({"search_query": search})
                 html_content = urllib.request.urlopen("http://www.youtube.com/results?" + query_string)
                 search_results = re.findall(r'href=\"\/watch\?v=(.{11})', html_content.read().decode())
-                url="http://www.youtube.com/watch?v=" + search_results[0]
+                url = "http://www.youtube.com/watch?v=" + search_results[0]
         vc = await client.join_voice_channel(voice_channel)
-        passed=False
-        index=0
-        player=None
+        passed = False
+        index = 0
+        player = None
         while not passed:
             try:
-                #check https://github.com/Rapptz/discord.py/issues/315 if you encounter any issues
+                # check https://github.com/Rapptz/discord.py/issues/315 if you encounter any issues
                 beforeArgs = "-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5"
                 player = await vc.create_ytdl_player(url=url, before_options=beforeArgs)
-                passed=True
+                passed = True
             except:
-                index+=1
+                index += 1
                 query_string = urllib.parse.urlencode({"search_query": search})
                 html_content = urllib.request.urlopen("http://www.youtube.com/results?" + query_string)
                 search_results = re.findall(r'href=\"\/watch\?v=(.{11})', html_content.read().decode())
@@ -178,7 +180,7 @@ async def play(context, url, *args):
         url = player.url
         embed = discord.Embed(title=title, color=0x992d22)
         embed.add_field(name='Video URL', value=url, inline=False)
-        msg=await client.send_message(context.message.channel, embed=embed)
+        msg = await client.send_message(text_channel, embed=embed)
         await client.add_reaction(message=msg, emoji=play_pause_emoji)
         await client.add_reaction(message=msg, emoji=stop_emoji)
         await client.add_reaction(message=msg, emoji=down_emoji)
@@ -190,6 +192,8 @@ async def play(context, url, *args):
         await vc.disconnect()
     else:
         await client.say('User is not in a channel.')
+
+    return
 
 
 @client.command(
@@ -552,6 +556,11 @@ async def on_reaction_add(reaction, user):
                 STREAM_PLAYER.pause()
             else:
                 STREAM_PLAYER.resume()
+        else:
+            try:
+                await play_yt(reaction.message.embeds[0]['fields'][0]['value'], user.voice.voice_channel, reaction.message.channel)
+            except:
+                return
     elif not user.bot and reaction.emoji.name == stop_emoji.name:
         voice_clients = client.voice_clients
         user_vc = user.voice.voice_channel
@@ -610,8 +619,13 @@ async def on_reaction_remove(reaction, user):
         if STREAM_PLAYER != None:
             if STREAM_PLAYER.is_playing():
                 STREAM_PLAYER.pause()
-            else:
+            elif not STREAM_PLAYER.is_done():
                 STREAM_PLAYER.resume()
+        else:
+            try:
+                await play_yt(reaction.message.embeds[0]['fields'][0]['value'], user.voice.voice_channel, reaction.message.channel)
+            except:
+                return
     elif not user.bot and reaction.emoji.name == stop_emoji.name:
         voice_clients = client.voice_clients
         user_vc = user.voice.voice_channel
@@ -643,24 +657,24 @@ async def on_ready():
     print(client.user.name)
     print(client.user.id)
     #clear all the messages in the soundboard channel
-    # msgs=[]
-    # soundboard_channel = client.get_channel(config.SOUNDBOARD_CHANNEL_ID)
-    # async for msg in client.logs_from(soundboard_channel):
-    #     msgs.append(msg)
-    # if len(msgs)>1:
-    #     await client.delete_messages(msgs)
-    # elif len(msgs)==1:
-    #     for message in msgs:
-    #         await client.delete_message(message)
-    # print('text channel <soundboard> has been cleared')
-    # onlyfiles = [f for f in listdir('soundboard/') if isfile(join('soundboard/', f))]
-    # for file in onlyfiles:
-    #     file_name = file[:-4]
-    #     await client.send_message(soundboard_channel, file_name)
-    # print('mp3 file names listed in soundboard channel')
-    # play_emoji=next(client.get_all_emojis())
-    # async for msg in client.logs_from(soundboard_channel):
-    #     await client.add_reaction(message=msg, emoji=play_emoji)
+    msgs=[]
+    soundboard_channel = client.get_channel(config.SOUNDBOARD_CHANNEL_ID)
+    async for msg in client.logs_from(soundboard_channel):
+        msgs.append(msg)
+    if len(msgs)>1:
+        await client.delete_messages(msgs)
+    elif len(msgs)==1:
+        for message in msgs:
+            await client.delete_message(message)
+    print('text channel <soundboard> has been cleared')
+    onlyfiles = [f for f in listdir('soundboard/') if isfile(join('soundboard/', f))]
+    for file in onlyfiles:
+        file_name = file[:-4]
+        await client.send_message(soundboard_channel, file_name)
+    print('mp3 file names listed in soundboard channel')
+    play_emoji=next(client.get_all_emojis())
+    async for msg in client.logs_from(soundboard_channel):
+        await client.add_reaction(message=msg, emoji=play_emoji)
     # print('reactions added')
     print('------')
 
