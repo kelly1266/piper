@@ -519,6 +519,15 @@ async def on_voice_state_update(before, after):
 
 @client.event
 async def on_reaction_add(reaction, user):
+    await when_reaction(reaction, user)
+
+
+@client.event
+async def on_reaction_remove(reaction, user):
+    await when_reaction(reaction, user)
+
+
+async def when_reaction(reaction, user):
     global STREAM_PLAYER
     emojis = client.get_all_emojis()
     play_emoji = next(emojis)
@@ -528,8 +537,8 @@ async def on_reaction_add(reaction, user):
     up_emoji = next(emojis)
     soundboard_channel = client.get_channel(config.SOUNDBOARD_CHANNEL_ID)
     if reaction.message.channel is soundboard_channel:
-        voice_channel=user.voice.voice_channel
-        mp3_file_name='soundboard/'+reaction.message.content+'.mp3'
+        voice_channel = user.voice.voice_channel
+        mp3_file_name = 'soundboard/' + reaction.message.content + '.mp3'
         # check if a file with the given name exists
         onlyfiles = [f for f in listdir('soundboard/') if isfile(join('soundboard/', f))]
         file_exists = False
@@ -558,7 +567,8 @@ async def on_reaction_add(reaction, user):
                 STREAM_PLAYER.resume()
         else:
             try:
-                await play_yt(reaction.message.embeds[0]['fields'][0]['value'], user.voice.voice_channel, reaction.message.channel)
+                await play_yt(reaction.message.embeds[0]['fields'][0]['value'], user.voice.voice_channel,
+                              reaction.message.channel)
             except:
                 return
     elif not user.bot and reaction.emoji.name == stop_emoji.name:
@@ -575,75 +585,10 @@ async def on_reaction_add(reaction, user):
         STREAM_PLAYER = None
     elif not user.bot and reaction.emoji.name == down_emoji.name:
         if STREAM_PLAYER != None:
-            STREAM_PLAYER.volume -=0.1
+            STREAM_PLAYER.volume -= 0.1
     elif not user.bot and reaction.emoji.name == up_emoji.name:
         if STREAM_PLAYER != None:
-            STREAM_PLAYER.volume +=0.1
-    return
-
-
-@client.event
-async def on_reaction_remove(reaction, user):
-    global STREAM_PLAYER
-    emojis = client.get_all_emojis()
-    play_emoji = next(emojis)
-    play_pause_emoji = next(emojis)
-    stop_emoji = next(emojis)
-    down_emoji = next(emojis)
-    up_emoji = next(emojis)
-    soundboard_channel = client.get_channel(config.SOUNDBOARD_CHANNEL_ID)
-    if reaction.message.channel is soundboard_channel:
-        voice_channel=user.voice.voice_channel
-        mp3_file_name='soundboard/'+reaction.message.content+'.mp3'
-        # check if a file with the given name exists
-        onlyfiles = [f for f in listdir('soundboard/') if isfile(join('soundboard/', f))]
-        file_exists = False
-        for file in onlyfiles:
-            test_file_name = 'soundboard/' + file
-            if mp3_file_name == test_file_name:
-                file_exists = True
-        # only play music if user is in a voice channel
-        if voice_channel != None and file_exists:
-            # grab user's voice channel
-            channel = voice_channel.name
-            # create StreamPlayer
-            vc = await client.join_voice_channel(voice_channel)
-            player = vc.create_ffmpeg_player(mp3_file_name, after=lambda: print('done'))
-            player.start()
-            while not player.is_done():
-                await asyncio.sleep(1)
-            # disconnect after the player has finished
-            player.stop()
-            await vc.disconnect()
-    elif not user.bot and reaction.emoji.name == play_pause_emoji.name:
-        if STREAM_PLAYER != None:
-            if STREAM_PLAYER.is_playing():
-                STREAM_PLAYER.pause()
-            elif not STREAM_PLAYER.is_done():
-                STREAM_PLAYER.resume()
-        else:
-            try:
-                await play_yt(reaction.message.embeds[0]['fields'][0]['value'], user.voice.voice_channel, reaction.message.channel)
-            except:
-                return
-    elif not user.bot and reaction.emoji.name == stop_emoji.name:
-        voice_clients = client.voice_clients
-        user_vc = user.voice.voice_channel
-        vc_disconnect = None
-        for vc in voice_clients:
-            if vc.channel == user_vc:
-                vc_disconnect = vc
-        if vc_disconnect != None:
-            await vc_disconnect.disconnect()
-        if STREAM_PLAYER != None:
-            STREAM_PLAYER.stop()
-        STREAM_PLAYER = None
-    elif not user.bot and reaction.emoji.name == down_emoji.name:
-        if STREAM_PLAYER != None:
-            STREAM_PLAYER.volume -=0.1
-    elif not user.bot and reaction.emoji.name == up_emoji.name:
-        if STREAM_PLAYER != None:
-            STREAM_PLAYER.volume +=0.1
+            STREAM_PLAYER.volume += 0.1
     return
 
 
@@ -675,7 +620,7 @@ async def on_ready():
     play_emoji=next(client.get_all_emojis())
     async for msg in client.logs_from(soundboard_channel):
         await client.add_reaction(message=msg, emoji=play_emoji)
-    # print('reactions added')
+    print('reactions added')
     print('------')
 
 
