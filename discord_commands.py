@@ -155,6 +155,8 @@ async def play_yt(url, voice_channel, text_channel, *args):
     stop_emoji = next(emojis)
     down_emoji = next(emojis)
     up_emoji = next(emojis)
+    rewind_emoji = next(emojis)
+    fast_forward_emoji = next(emojis)
     # grab the voice channel of the user
     channel = None
     if voice_channel != None:
@@ -192,6 +194,8 @@ async def play_yt(url, voice_channel, text_channel, *args):
         await client.add_reaction(message=msg, emoji=stop_emoji)
         await client.add_reaction(message=msg, emoji=down_emoji)
         await client.add_reaction(message=msg, emoji=up_emoji)
+        await client.add_reaction(message=msg, emoji=rewind_emoji)
+        await client.add_reaction(message=msg, emoji=fast_forward_emoji)
         player.start()
         while not player.is_done():
             await asyncio.sleep(1)
@@ -438,17 +442,14 @@ async def parrot(context, *args):
         await client.say('User is not in a channel.')
 
 
-
-
-
-#On event methods
+# On event methods
 @client.event
 async def on_message(message):
     if spellkey(message.content) and message.channel.name != 'spellbreak-lobby-codes' and message.channel.name != 'hidden':
         spellbreak_channel = client.get_channel(config.SPELLBREAK_CHANNEL_ID)
         await client.send_message(spellbreak_channel, message.content)
         await client.delete_message(message)
-    text=message.content.lower()
+    text = message.content.lower()
     if 'bad bot' == text:
         config.BAD_BOT += 1
         channel = message.channel
@@ -509,6 +510,8 @@ async def when_reaction(reaction, user):
     stop_emoji = next(emojis)
     down_emoji = next(emojis)
     up_emoji = next(emojis)
+    rewind_emoji = next(emojis)
+    fast_forward_emoji = next(emojis)
     soundboard_channel = client.get_channel(config.SOUNDBOARD_CHANNEL_ID)
     if reaction.message.channel is soundboard_channel:
         voice_channel = user.voice.voice_channel
